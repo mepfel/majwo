@@ -11,7 +11,7 @@ prepare_data <- function(path_to_data) {
     mutate(date = dmy(date), hour_int = hour(hm(hour_int))) |>
     # Add hour to date object
     mutate(date = make_datetime(year = year(date), month = month(date), day = day(date), hour = hour_int)) |>
-    mutate(weekday_int = wday(date), month_int = month(date))
+    mutate(weekday_int = wday(date, week_start = 1), month_int = month(date))
   # Remove thousand separator and replace decimal separator as .
   data$load <- as.numeric(gsub(",", ".", gsub("\\.", "", data$load)))
 
