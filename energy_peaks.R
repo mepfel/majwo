@@ -16,7 +16,7 @@ ggplot(peaks, aes(x = load)) +
   geom_histogram(binwidth = 250) +
   labs(
     title = "Histogramm of load peaks from 2022 to 2024",
-    x = "Load in kWh"
+    x = "Load in MWh"
   )
 
 # Grouped by working day
@@ -26,7 +26,7 @@ peaks |>
   geom_histogram(binwidth = 250) +
   labs(
     title = "Histogramm of Load peaks for 2022 - 2024 for Weekends",
-    x = "Load in kWh",
+    x = "Load in MWh",
   )
 
 peaks |>
@@ -35,7 +35,7 @@ peaks |>
   geom_histogram(binwidth = 250) +
   labs(
     title = "Histogramm of Load peaks for 2022 - 2024 for Weekdays",
-    x = "Load in kWh",
+    x = "Load in MWh",
   )
 
 # --- Density of the peaks ---
@@ -43,7 +43,7 @@ ggplot(peaks, aes(x = load)) +
   geom_density() +
   labs(
     title = "Density of the load peaks 2022 - 2024",
-    x = "Load in kWh"
+    x = "Load in MWh"
   )
 
 # --- Scatterplot of the load peaks grouped by working days
@@ -53,7 +53,7 @@ ggplot(peaks, aes(x = hour_int, y = load, color = working_day)) +
   labs(
     title = "Scatterplot of Load peaks from 2022 - 2024",
     x = "Hour of the day",
-    y = "Load in kWh"
+    y = "Load in MWh"
   )
 
 # --- Bivariate Density of Load peaks ---

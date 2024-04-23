@@ -2,7 +2,7 @@
 library(tidyverse)
 
 # Data Preparation --------------------------------------------------------
-prepare_data <- function(path_to_data) {
+prepare_data_1 <- function(path_to_data) {
   # Read CSV file and select specific columns,
   # rename columns, and convert date and time columns
   data <- read.csv(path_to_data, sep = ";") |>
@@ -20,8 +20,31 @@ prepare_data <- function(path_to_data) {
   return(data)
 }
 
-# Prepare data for the first CSV file
-energy_load <- prepare_data("./data/raw/Realisierter_Stromverbrauch_2022-2024_stuendlich.csv")
+prepare_data_2 <- function(path_to_data) {
+  # Read CSV file and select specific columns,
+  # rename columns, and convert date and time columns
+  data <- read.csv(path_to_data, sep = ";") |>
+    # Select columns load and date
+    select(c("Datum.von", "Gesamt..Netzlast...MWh..Berechnete.Auflösungen")) |>
+    rename(date = "Datum.von", load = "Gesamt..Netzlast...MWh..Berechnete.Auflösungen") |>
+    # Convert the date column into the right format
+    mutate(date = dmy_hm(date)) |>
+    # Generate weekday_int, hour_int and month_int
+    mutate(hour_int = hour(date), weekday_int = wday(date, week_start = 1), month_int = month(date)) |>
+    # Add working days/weekends
+    mutate(working_day = !(weekday_int %in% c(6, 7)))
+  # Remove thousand separator and replace decimal separator as .
+  data$load <- as.numeric(gsub(",", ".", gsub("\\.", "", data$load)))
 
+  return(data)
+}
+
+# --- Prepare data from 2022 - 2024 for the first CSV file ---
+energy_load <- prepare_data_1("./data/raw/2022-2024_Realisierter-Stromverbrauch_stunde.csv")
 # Save dataframes as CSV files in the Data folder
 write.csv(energy_load, file = "./data/load_22-24.csv", row.names = FALSE)
+
+# --- Prepare data from 2015 - 2024 ---
+energy_load <- prepare_data_2("./data/raw/2015-2024_Realisierter-Stromverbrauch_stunde.csv")
+# Save dataframes as CSV files in the Data folder
+write.csv(energy_load, file = "./data/load_15-24.csv", row.names = FALSE)

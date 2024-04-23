@@ -5,20 +5,201 @@ date: "`r Sys.Date()`"
 output: html_document
 
 ---
-
-## Introduction
-
 ```{r, message=FALSE}
 library(tidyverse)
 library(ggplot2)
+```
+
+Select the years to analyse!
+```{r}
+energy_load <- read.csv("../data/load_22-24.csv")
+energy_load$date <- as.POSIXct(energy_load$date, tz = "UTC")
+```
+
+
+# Energy Load
+Summary statistics
+```{r}
+summary(energy_load)
+
+paste("SD for load: ", sapply(energy_load, sd, na.rm = TRUE)[3], " MWh")
+```
+
+The average load per hour for the whole time series
+```{r}
+energy_load |>
+    group_by(hour_int) |>
+    summarise(mean_load = mean(load)) |>
+    ggplot(aes(x = hour_int, y = mean_load)) +
+    geom_point() +
+    geom_line() +
+    labs(
+        x = "Hour of the day",
+        y = "Mean Load",
+        title = "Average Load over the years 2022-2024 per day",
+    )
+```
+
+The average load per hour grouped by year
+```{r}
+# Add a new column for the year
+
+
+# Group by hour and year, then calculate the mean load
+avg_load_by_hour_year <- energy_load |>
+    mutate(year = year(date)) |>
+    group_by(hour_int, year) |>
+    summarise(mean_load = mean(load))
+
+# Plot
+avg_load_by_hour_year |>
+    ggplot(aes(x = hour_int, y = mean_load, colour = factor(year))) +
+    geom_point() +
+    geom_line() +
+    labs(
+        x = "Hour of the day",
+        y = "Mean Load",
+        title = "Average Load over the years 2022-2024 per day",
+    )
+```
+
+Boxplot of the load per day for the weeks from 2022 - 2024
+```{r}
+energy_load |>
+    ggplot(aes(x = as.factor(weekday_int), y = load)) +
+    geom_boxplot() +
+    labs(x = "Weekday", y = "Load in MWh", title = "Load per weekday from 2022 - 2024")
+```
+
+Load over the whole time period by months and grouped by working day
+```{r}
+month <- 2
+energy_load |>
+    filter(month_int == month) |>
+    ggplot(aes(hour_int, load, color = working_day)) +
+    geom_point() +
+    labs(
+        x = "Hour of the day",
+        y = "Load in MWh",
+        title = "Load per hour for the period 2022 - 2024",
+        subtitle = paste("grouped by working day and filtered by month ", month)
+    )
+```
+
+Overview of a time series of loads per Month for a given year and month
+```{r}
+# --- Get the time series of loads for a given year and month ---
+year <- 2024
+month <- 1
+# Create the figure
+energy_load |>
+    filter(year(date) == year & month_int == month) |>
+    mutate(week_day_hour = weekday_int + hour_int / 24, week_int = week(date)) |>
+    ggplot(aes(x = week_day_hour, y = load, colour = factor(week_int))) +
+    geom_point(size = 0.5) +
+    geom_line() +
+    scale_x_continuous(breaks = 1:7, labels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")) +
+    labs(
+        x = "Day of the week",
+        y = "Load in MWh",
+        colour = "Week of the month",
+        title = paste("Load per hour for the year ", year, " and the month ", month)
+    )
+```
+
+A histogramm of the data for the whole time series
+```{r}
+ggplot(energy_load, aes(load)) +
+    geom_histogram(binwidth = 500) +
+    labs(
+        x = "Load in MWh",
+        title = "Histogramm of all data points from 2022 - 2024",
+    )
+```
+
+A histogramm of the data grouped by working days and weekends
+
+```{r}
+ggplot(energy_load, aes(load)) +
+    geom_histogram(binwidth = 500) +
+    labs(
+        title = "Histogramm of Loads for 2022 - 2024 for Working Days",
+        x = "Load in MWh"
+    ) +
+    facet_wrap(~working_day)
+```
+
+# Energy Load Peaks
+
+Getting the peaks
+```{r}
+peaks <- energy_load |>
+    group_by(as.Date(date)) |>
+    slice(which.max(load))
+```
+
+Histogramm of the peaks
+```{r}
+peaks |>
+    ggplot(aes(x = load)) +
+    geom_histogram(binwidth = 250) +
+    labs(
+        title = "Histogramm of load peaks from 2022 to 2024",
+        x = "Load in MWh"
+    )
+```
+
+Histogramm of the peaks grouped by working days
+```{r}
+peaks |>
+    ggplot(aes(load)) +
+    geom_histogram(binwidth = 250) +
+    labs(
+        title = "Histogramm of Loads for 2022 - 2024 for Working Days",
+        x = "Load in MWh"
+    ) +
+    facet_wrap(~working_day)
+```
+
+Scatterplot of the load peaks per hour grouped by working days 
+```{r}
+peaks |>
+    ggplot(aes(x = hour_int, y = load, color = working_day)) +
+    geom_point() +
+    scale_x_continuous(breaks = seq(min(peaks$hour_int), max(peaks$hour_int), by = 1)) +
+    labs(
+        title = "Scatterplot of Load peaks from 2022 - 2024",
+        x = "Hour of the day",
+        y = "Load in MWh"
+    )
+```
+
+Density of the peaks
+```{r}
+ggplot(peaks, aes(x = load)) +
+    geom_density() +
+    labs(
+        title = "Density of the load peaks 2022 - 2024",
+        x = "Load in MWh"
+    )
+```
+
+
+## Bivariate Density of Load peaks
+```{r, message=FALSE}
+library(MASS)
 library(plotly)
 ```
 
+Density of **energy load** on hourly resolution
 ```{r}
-energy_load <- read.csv("../data/load_22-24.csv")
-energy_load$date <- as.POSIXct(energy_load$date)
+den3d <- kde2d(energy_load$load, energy_load$hour_int)
+plot_ly(x = den3d$x, y = den3d$y, z = den3d$z) |> add_surface()
 ```
 
+Density of **load peaks** for one week
 ```{r}
-
+den3d <- kde2d(peaks$weekday_int, peaks$load)
+plot_ly(x = den3d$x, y = den3d$y, z = den3d$z) |> add_surface()
 ```
+

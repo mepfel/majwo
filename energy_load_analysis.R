@@ -22,14 +22,12 @@ energy_load |>
 ggplot(energy_load, aes(load)) +
     geom_histogram(binwidth = 500) +
     labs(
-        x = "Load in kWh",
+        x = "Load in MWh",
         title = "Histogramm of all data points from 2022 - 2024",
     )
 
 
 # --- Histogramm of week days/weekend days ---
-energy_load <- energy_load |>
-    mutate(working_day = !(weekday_int %in% c(6, 7)))
 
 energy_load |>
     filter(working_day == TRUE) |>
@@ -37,7 +35,7 @@ energy_load |>
     geom_histogram(binwidth = 500) +
     labs(
         title = "Histogramm of Loads for 2022 - 2024 for Working Days",
-        x = "Load in kWh"
+        x = "Load in MWh"
     )
 
 energy_load |>
@@ -46,7 +44,7 @@ energy_load |>
     geom_histogram(binwidth = 500) +
     labs(
         title = "Histogramm of Loads for 2022 - 2024 for Weekends",
-        x = "Load in kWh",
+        x = "Load in MWh",
     )
 
 # ---  Filter for one specific week, for example the first week of the dataset ---
@@ -56,7 +54,7 @@ energy_load |>
     geom_line() +
     labs(
         x = "Hour of the day",
-        y = "Mean Load",
+        y = "Load",
         title = "Load for one exemplary weeks",
     )
 
@@ -74,7 +72,7 @@ fig <- energy_load |>
     ) +
     labs(
         x = "Hour of the day",
-        y = "Load in kWh",
+        y = "Load in MWh",
         title = paste("Load per hour for the year ", year, " and the month ", month)
     ) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.5))
@@ -89,7 +87,7 @@ fig2 <- energy_load |>
     geom_point() +
     labs(
         x = "Hour of the day",
-        y = "Load in kWh",
+        y = "Load in MWh",
         title = "Load per hour for the period 2022 - 2024",
         subtitle = paste("grouped by working day and filtered by month ", month)
     )
@@ -102,10 +100,10 @@ energy_load |>
 # --- Summary Statistics ---
 summary(energy_load)
 
-paste("SD for load: ", sapply(energy_load, sd, na.rm = TRUE)[3], " kWh")
+paste("SD for load: ", sapply(energy_load, sd, na.rm = TRUE)[3], " MWh")
 
 
 # --- Boxplot of load per day of the week from 2022 - 2024
 ggplot(energy_load, aes(x = as.factor(weekday_int), y = load)) +
     geom_boxplot() +
-    labs(x = "Weekday", y = "Load in kWh", title = "Load per weekday from 2022 - 2024")
+    labs(x = "Weekday", y = "Load in MWh", title = "Load per weekday from 2022 - 2024")
