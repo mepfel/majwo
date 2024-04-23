@@ -1,78 +1,71 @@
 library(tidyverse)
 library(ggplot2)
 
-energy <- read.csv("Data/rf_data_1823.csv")
+# --- Load the energy data ---
+energy_load <- read.csv("./data/load_22-24.csv")
+energy_load$date <- as.POSIXct(energy_load$date, tz = "UTC")
 
-# Approach 2
-peaks <- energy %>%
-  group_by(date) %>%
+# --- Getting the peaks ---
+peaks <- energy_load |>
+  group_by(as.Date(date)) |>
   slice(which.max(load))
 
 
+# --- Histogramm of the peaks ---
+ggplot(peaks, aes(x = load)) +
+  geom_histogram(binwidth = 250) +
+  labs(
+    title = "Histogramm of load peaks from 2022 to 2024",
+    x = "Load in kWh"
+  )
 
-ggplot(peaks, aes(x = load_peak)) + geom_histogram(bins = 100)
+# Grouped by working day
+peaks |>
+  filter(working_day == FALSE) |>
+  ggplot(aes(load)) +
+  geom_histogram(binwidth = 250) +
+  labs(
+    title = "Histogramm of Load peaks for 2022 - 2024 for Weekends",
+    x = "Load in kWh",
+  )
 
-ggplot(peaks, aes(x = load_peak)) + geom_density()
+peaks |>
+  filter(working_day == TRUE) |>
+  ggplot(aes(load)) +
+  geom_histogram(binwidth = 250) +
+  labs(
+    title = "Histogramm of Load peaks for 2022 - 2024 for Weekdays",
+    x = "Load in kWh",
+  )
 
-# Scatterplot
-ggplot(peaks, aes(x = hour_int, y = load)) + geom_point()
+# --- Density of the peaks ---
+ggplot(peaks, aes(x = load)) +
+  geom_density() +
+  labs(
+    title = "Density of the load peaks 2022 - 2024",
+    x = "Load in kWh"
+  )
 
-ggplot(peaks, aes(x = hour_int)) + geom_density_2d()
+# --- Scatterplot of the load peaks grouped by working days
+ggplot(peaks, aes(x = hour_int, y = load, color = working_day)) +
+  geom_point() +
+  scale_x_continuous(breaks = seq(min(peaks$hour_int), max(peaks$hour_int), by = 1)) +
+  labs(
+    title = "Scatterplot of Load peaks from 2022 - 2024",
+    x = "Hour of the day",
+    y = "Load in kWh"
+  )
 
-# Density of load peaks
+# --- Bivariate Density of Load peaks ---
 library(MASS)
 library(plotly)
-den3d <- kde2d(peaks$hour_int, peaks$load)
-plot_ly(x=den3d$x, y=den3d$y, z=den3d$z) %>% add_surface()
 
+# --- Density of energy load on hour resolution ---
+# Estimation of bivariate density
+den3d <- kde2d(energy_load$load, energy_load$hour_int)
+plot_ly(x = den3d$x, y = den3d$y, z = den3d$z) |>
+  add_surface()
 
-# Density of load
-den3d <- kde2d(energy$hour_int, energy$load)
-plot_ly(x=den3d$x, y=den3d$y, z=den3d$z) %>% add_surface()
-
-# Density of load
-den3d <- kde2d(energy$weekday_int, energy$load)
-plot_ly(x=den3d$x, y=den3d$y, z=den3d$z) %>% add_surface()
-
-# Heatmap
-fig <- plot_ly(energy, x = ~weekday_int, y = ~hour_int, z = ~load)
-fig <- fig %>% add_heatmap()
-fig <- fig %>% layout(scene = list(xaxis = list(title = 'Weekday'),
-                                   yaxis = list(title = 'Hour'),
-                                   zaxis = list(title = 'Load')))
-
-fig
-
-# Scatter Plot
-fig <- plot_ly(energy, x = ~weekday_int, y = ~hour_int, z = ~load)
-fig <- fig %>% add_markers(marker = list(size = 3))
-fig <- fig %>% layout(scene = list(xaxis = list(title = 'Weekday'),
-                                   yaxis = list(title = 'Hour'),
-                                   zaxis = list(title = 'Load')))
-
-fig
-
-
-# Scatter plot of peaks
-fig <- plot_ly(peaks, x = ~weekday_int, y = ~hour_int, z = ~load)
-fig <- fig %>% add_markers(marker = list(size = 3))
-fig <- fig %>% layout(scene = list(xaxis = list(title = 'Weekday'),
-                                   yaxis = list(title = 'Hour'),
-                                   zaxis = list(title = 'Load')))
-
-fig
-
-# Heatmap of peaks
-fig <- plot_ly(peaks, x = ~weekday_int, y = ~hour_int, z = ~load)
-fig <- fig %>% add_heatmap()
-fig <- fig %>% layout(scene = list(xaxis = list(title = 'Weekday'),
-                                   yaxis = list(title = 'Hour'),
-                                   zaxis = list(title = 'Load')))
-
-fig
-
-
-
-
-
-       
+# Density of load peaks over the week
+den3d <- kde2d(peaks$weekday_int, peaks$load)
+plot_ly(x = den3d$x, y = den3d$y, z = den3d$z) |> add_surface()
