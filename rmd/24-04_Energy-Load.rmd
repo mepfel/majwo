@@ -12,7 +12,7 @@ library(ggplot2)
 
 Select the years to analyse!
 ```{r}
-energy_load <- read.csv("../data/load_22-24.csv")
+energy_load <- read.csv("../data/load_15-24.csv")
 energy_load$date <- as.POSIXct(energy_load$date, tz = "UTC")
 ```
 
@@ -36,7 +36,7 @@ energy_load |>
     labs(
         x = "Hour of the day",
         y = "Mean Load",
-        title = "Average Load over the years 2022-2024 per day",
+        title = "Average Load over the years 2015-2024 per day",
     )
 ```
 
@@ -59,7 +59,7 @@ avg_load_by_hour_year |>
     labs(
         x = "Hour of the day",
         y = "Mean Load",
-        title = "Average Load over the years 2022-2024 per day",
+        title = "Average Load over the years 2015-2024 per day",
     )
 ```
 
@@ -68,7 +68,16 @@ Boxplot of the load per day for the weeks from 2022 - 2024
 energy_load |>
     ggplot(aes(x = as.factor(weekday_int), y = load)) +
     geom_boxplot() +
-    labs(x = "Weekday", y = "Load in MWh", title = "Load per weekday from 2022 - 2024")
+    labs(x = "Weekday", y = "Load in MWh", title = "Load per weekday from 2015 - 2024")
+```
+
+Boxplot of the load per month for periode from 2022 - 2024
+
+```{r}
+energy_load |>
+    ggplot(aes(x = as.factor(month_int), y = load)) +
+    geom_boxplot() +
+    labs(x = "Month", y = "Load in MWh", title = "Load per month from 2015 - 2024")
 ```
 
 Load over the whole time period by months and grouped by working day
@@ -81,7 +90,7 @@ energy_load |>
     labs(
         x = "Hour of the day",
         y = "Load in MWh",
-        title = "Load per hour for the period 2022 - 2024",
+        title = "Load per hour for the period 2015 - 2024",
         subtitle = paste("grouped by working day and filtered by month ", month)
     )
 ```
@@ -113,7 +122,7 @@ ggplot(energy_load, aes(load)) +
     geom_histogram(binwidth = 500) +
     labs(
         x = "Load in MWh",
-        title = "Histogramm of all data points from 2022 - 2024",
+        title = "Histogramm of all data points from 2015 - 2024",
     )
 ```
 
@@ -123,7 +132,7 @@ A histogramm of the data grouped by working days and weekends
 ggplot(energy_load, aes(load)) +
     geom_histogram(binwidth = 500) +
     labs(
-        title = "Histogramm of Loads for 2022 - 2024 for Working Days",
+        title = "Histogramm of Loads for 2015 - 2024 for Working Days",
         x = "Load in MWh"
     ) +
     facet_wrap(~working_day)
@@ -144,7 +153,7 @@ peaks |>
     ggplot(aes(x = load)) +
     geom_histogram(binwidth = 250) +
     labs(
-        title = "Histogramm of load peaks from 2022 to 2024",
+        title = "Histogramm of load peaks from 2015 to 2024",
         x = "Load in MWh"
     )
 ```
@@ -155,7 +164,7 @@ peaks |>
     ggplot(aes(load)) +
     geom_histogram(binwidth = 250) +
     labs(
-        title = "Histogramm of Loads for 2022 - 2024 for Working Days",
+        title = "Histogramm of Loads for 2015 - 2024 for Working Days",
         x = "Load in MWh"
     ) +
     facet_wrap(~working_day)
@@ -168,7 +177,7 @@ peaks |>
     geom_point() +
     scale_x_continuous(breaks = seq(min(peaks$hour_int), max(peaks$hour_int), by = 1)) +
     labs(
-        title = "Scatterplot of Load peaks from 2022 - 2024",
+        title = "Scatterplot of Load peaks from 2015 - 2024",
         x = "Hour of the day",
         y = "Load in MWh"
     )
@@ -179,11 +188,38 @@ Density of the peaks
 ggplot(peaks, aes(x = load)) +
     geom_density() +
     labs(
-        title = "Density of the load peaks 2022 - 2024",
+        title = "Density of the load peaks 2015 - 2024",
         x = "Load in MWh"
     )
 ```
 
+Density of the peaks grouped by working days
+```{r}
+ggplot(peaks, aes(x = load)) +
+    geom_density() +
+    labs(
+        title = "Density of the load peaks 2015 - 2024 grouped by working days",
+        x = "Load in MWh"
+    ) +
+    facet_wrap(~working_day)
+```
+
+Boxplot of the peaks per day for the weeks from 2022 - 2024
+```{r}
+peaks |>
+    ggplot(aes(x = as.factor(weekday_int), y = load)) +
+    geom_boxplot() +
+    labs(x = "Weekday", y = "Load in MWh", title = "Daily peak per weekday from 2015 - 2024")
+```
+
+Boxplot of the peaks per month for periode from 2022 - 2024
+
+```{r}
+peaks |>
+    ggplot(aes(x = as.factor(month_int), y = load)) +
+    geom_boxplot() +
+    labs(x = "Month", y = "Load in MWh", title = "Peak load per month from 2015 - 2024")
+```
 
 ## Bivariate Density of Load peaks
 ```{r, message=FALSE}
@@ -197,9 +233,104 @@ den3d <- kde2d(energy_load$load, energy_load$hour_int)
 plot_ly(x = den3d$x, y = den3d$y, z = den3d$z) |> add_surface()
 ```
 
-Density of **load peaks** for one week
+Density of **load peaks** per day for working days
 ```{r}
-den3d <- kde2d(peaks$weekday_int, peaks$load)
-plot_ly(x = den3d$x, y = den3d$y, z = den3d$z) |> add_surface()
+peaks_working <- peaks |>
+    filter(working_day == TRUE)
+
+peaks_working |>
+    ggplot(aes(load)) +
+    geom_density() +
+    labs(
+        title = "Density of the load peaks for the day grouped by hour for working days",
+        x = "Load in MWh"
+    ) +
+    facet_wrap(~hour_int)
 ```
 
+Depicting the density of hour 11
+```{r}
+peaks_working |>
+    filter(hour_int == 11) |>
+    ggplot(aes(load)) +
+    geom_density() +
+    labs(
+        title = "Density of the load peaks on Working days at hour 11",
+        x = "Load in MWh"
+    )
+```
+
+Depicting the density of hour 12
+```{r}
+peaks_working |>
+    filter(hour_int == 12) |>
+    ggplot(aes(load)) +
+    geom_density() +
+    labs(
+        title = "Density of the load peaks on Working days at hour 12",
+        x = "Load in MWh"
+    )
+```
+
+Depicting the density of hour 13
+```{r}
+peaks_working |>
+    filter(hour_int == 13) |>
+    ggplot(aes(load)) +
+    geom_density() +
+    labs(
+        title = "Density of the load peaks on Working days at hour 13",
+        x = "Load in MWh"
+    )
+```
+
+Density of **load peaks** per day for weekends
+```{r}
+peaks_weekends <- peaks |>
+    filter(working_day == FALSE)
+
+peaks_weekends |>
+    ggplot(aes(load)) +
+    geom_density() +
+    labs(
+        title = "Density of the load peaks for the day grouped by hour for weekends",
+        x = "Load in MWh"
+    ) +
+    facet_wrap(~hour_int)
+```
+
+Depicting the density of hour 18
+```{r}
+peaks_weekends |>
+    filter(hour_int == 18) |>
+    ggplot(aes(load)) +
+    geom_density() +
+    labs(
+        title = "Density of the load peaks for the weekends at hour 18",
+        x = "Load in MWh"
+    )
+```
+
+Depicting the density of hour 19
+```{r}
+peaks_weekends |>
+    filter(hour_int == 19) |>
+    ggplot(aes(load)) +
+    geom_density() +
+    labs(
+        title = "Density of the load peaks for the weekends at hour 19",
+        x = "Load in MWh"
+    )
+```
+
+Depicting the density of hour 20
+```{r}
+peaks_weekends |>
+    filter(hour_int == 20) |>
+    ggplot(aes(load)) +
+    geom_density() +
+    labs(
+        title = "Density of the load peaks for the weekends at hour 20",
+        x = "Load in MWh"
+    )
+```
