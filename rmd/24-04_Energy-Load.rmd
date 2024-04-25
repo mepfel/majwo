@@ -25,6 +25,18 @@ summary(energy_load)
 paste("SD for load: ", sapply(energy_load, sd, na.rm = TRUE)[3], " MWh")
 ```
 
+Overview of the whole time series
+```{r, eval=FALSE}
+energy_load |>
+    ggplot(aes(date, load)) +
+    geom_line() +
+    labs(
+        x = "Time",
+        y = "Load in MWh",
+        title = "Loads over the years 2015 - 2024",
+    )
+```
+
 The average load per hour for the whole time series
 ```{r}
 energy_load |>
@@ -147,6 +159,18 @@ peaks <- energy_load |>
     slice(which.max(load))
 ```
 
+Overview of peaks over time
+```{r}
+peaks |>
+    ggplot(aes(date, load)) +
+    geom_line() +
+    labs(
+        x = "Time",
+        y = "Load in MWh",
+        title = "Load peaks over the years 2015 - 2024",
+    )
+```
+
 Histogramm of the peaks
 ```{r}
 peaks |>
@@ -168,6 +192,17 @@ peaks |>
         x = "Load in MWh"
     ) +
     facet_wrap(~working_day)
+```
+
+Histogramm of the peaks based on hours of the day
+```{r}
+peaks |>
+    ggplot(aes(hour_int)) +
+    geom_histogram(binwidth = 1) +
+    labs(
+        title = "Histogramm of Peak Loads for 2015 - 2024 per hour of the day",
+        x = "Hour of the day"
+    )
 ```
 
 Scatterplot of the load peaks per hour grouped by working days 
