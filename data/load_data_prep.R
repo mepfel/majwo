@@ -60,7 +60,6 @@ prepare_data_3 <- function(path_to_data) {
   return(data)
 }
 
-energy_load <- read.csv("./data/raw/2015-2024_Realisierter-Stromverbrauch_viertelstunde.csv", sep = ";")
 
 # --- Prepare data from 2022 - 2024 for the first CSV file ---
 energy_load <- prepare_data_1("./data/raw/2022-2024_Realisierter-Stromverbrauch_stunde.csv")
@@ -71,3 +70,7 @@ write.csv(energy_load, file = "./data/load_22-24.csv", row.names = FALSE)
 energy_load <- prepare_data_2("./data/raw/2015-2024_Realisierter-Stromverbrauch_stunde.csv")
 # Save dataframes as CSV files in the Data folder
 write.csv(energy_load, file = "./data/load_15-24.csv", row.names = FALSE)
+
+# For 15 minutes time intervals
+energy_load <- prepare_data_3("./data/raw/2015-2024_Realisierter-Stromverbrauch_viertelstunde.csv")
+write.csv(energy_load, file = "./data/load_15-24_quartarly.csv", row.names = FALSE)
