@@ -19,6 +19,14 @@ ggplot(peaks, aes(x = load)) +
     x = "Load in MWh"
   )
 
+# Per hour
+ggplot(peaks, aes(hour_int)) +
+  geom_histogram(binwidth = 1) +
+  labs(
+    title = "Histogramm of load peaks from 2022 to 2024 per 15 min",
+    x = "Time in 15 min intervalls"
+  )
+
 # Grouped by working day
 peaks |>
   filter(working_day == FALSE) |>
