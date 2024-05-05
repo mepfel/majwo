@@ -1,5 +1,5 @@
 ### Installed packages
 
 ```{r}
-install.packages(c("tidyverse","plotly"))
+install.packages(c("tidyverse", "plotly", "scoringRules"))
 ```
