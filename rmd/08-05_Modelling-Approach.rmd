@@ -1,0 +1,129 @@
+---
+title: "Modelling Approach"
+author: "JW"
+date: "`r Sys.Date()`"
+output: html_document
+
+---
+```{r, message=FALSE}
+library(tidyverse)
+library(scoringRules)
+```
+
+Loading the data
+```{r}
+# --- Load the energy data ---
+energy_load <- read.csv("../data/load_22-24.csv")
+energy_load$date <- as.POSIXct(energy_load$date, tz = "UTC")
+
+# --- Getting the peaks ---
+peaks <- energy_load |>
+    group_by(as.Date(date)) |>
+    slice(which.max(load))
+```
+
+## Task
+**Predicting the load peak  for the next 24h.**
+
+## Modelling Ideas
+### A - Model based on past peak observations
+#### a) Univariate distribution
+$(t_1,p_1),..., (t_n,p_n)$ observations
+
+-> Distribution of peak time $t$
+
+-> Distribution of load peak $p$
+
+#### b) Bivariate distribution
+$(t_1,p_1),..., (t_n,p_n)$ observations
+
+-> Distribution of $(\hat{p},\hat{t})$
+
+### B - Model based on load forecasts
+For every time unit of the day (hourly -> 24, quartarly -> 96) use a univariate load distribution.
+
+#### a) 24 Hours -> 1 day
+
+#### b) 96 15-Min Intervals -> 1 day
+
+Based on an *SARIMAX*, we model the basic load movements and create forecasting errors.
+
+Forecasting errors -> Distribution (parametric (Gaussain), non parametric (empirical))
+
+Model the dependence structure (based on copulas based on the forecasting errors)
+
+-> Draw samples from this distribution and select the maximum peak load.
+
+## Rolling window Methods
+```{r}
+# ---- Rolling Window Methods ----
+# Setting the window in days which should be considered as forecast for the next 24 hours
+window <- 100
+```
+
+Method A --- Using past peak data
+```{r}
+get_peaks_rolling <- function(days) {
+    peaks_rolling <- peaks[(nrow(peaks) - window - days + 1):(nrow(peaks) - days), c(1, 2, 3)] |>
+        arrange(desc(date))
+
+    return(as.matrix(cbind(peaks_rolling$hour_int, peaks_rolling$load)))
+}
+```
+
+Method B --- Using hourly load forecasts
+
+```{r}
+get_peaks_rolling_loads <- function(days) {
+    # Step 1: Getting the empirical distribution
+    # -
+
+    # Step 2: Generating time traces per hour
+    loads_rolling <- energy_load |>
+        slice(1:(nrow(energy_load) - days * 24)) |>
+        group_by(hour_int) |>
+        arrange(desc(date)) |>
+        slice_head(n = window)
+
+    # Step 3: Extracting the peaks to get the distribution of peaks
+    loads_rolling_peaks <- loads_rolling[, c(1, 2, 3)] |>
+        group_by(as.Date(date)) |>
+        slice(which.max(load)) |>
+        arrange(desc(date))
+
+    return(as.matrix(cbind(loads_rolling_peaks$hour_int, loads_rolling_peaks$load)))
+}
+```
+
+Calculate CRPS/ES Scores for the rolling window models
+
+```{r}
+# Initialize an empty data frame to store the results
+results <- data.frame(day = integer(), crps_a = numeric(), crps_b = numeric(), es_a = numeric(), es_b = numeric())
+
+# Loop over the days
+for (day in 1:20) {
+    # Update the observations
+    obs_uni <- as.numeric(unlist(peaks[nrow(peaks) - day + 1, 3]))
+    obs_bi <- as.numeric(unlist(peaks[nrow(peaks) - day + 1, 2:3]))
+
+    # Update the forecasts
+    uni_forecast_a <- get_peaks_rolling(day)[, 2]
+    uni_forecast_b <- get_peaks_rolling_loads(day)[, 2]
+    bi_forecast_a <- get_peaks_rolling(day)
+    bi_forecast_b <- get_peaks_rolling_loads(day)
+
+    # Calculate the CRPS and ES samples
+    crps_a <- crps_sample(obs_uni, uni_forecast_a)
+    crps_b <- crps_sample(obs_uni, uni_forecast_b)
+    es_a <- es_sample(obs_bi, t(bi_forecast_a))
+    es_b <- es_sample(obs_bi, t(bi_forecast_b))
+
+    # Add the results to the data frame
+    results <- rbind(results, data.frame(day = day, crps_a = crps_a, crps_b = crps_b, es_a = es_a, es_b = es_b))
+}
+
+# Print the results
+print(results)
+```
+
