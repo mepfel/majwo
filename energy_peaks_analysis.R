@@ -1,8 +1,9 @@
 library(tidyverse)
 library(ggplot2)
+library(plotly)
 
 # --- Load the energy data ---
-energy_load <- read.csv("./data/load_22-24.csv")
+energy_load <- read.csv("./data/load_15-24.csv")
 energy_load$date <- as.POSIXct(energy_load$date, tz = "UTC")
 
 # --- Getting the peaks ---
@@ -10,6 +11,17 @@ peaks <- energy_load |>
   group_by(as.Date(date)) |>
   slice(which.max(load))
 
+# --- Time Series of the peaks ---
+fig <- ggplot(peaks, aes(x = date, y = load)) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "Time Series of the Peak Load from 2015 to 2024",
+    x = "Date",
+    y = "Peak Load in MWh"
+  )
+fig
+ggplotly(fig)
 
 # --- Histogramm of the peaks ---
 ggplot(peaks, aes(x = load)) +
