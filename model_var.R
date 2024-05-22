@@ -13,7 +13,6 @@ peaks <- energy_load |>
   group_by(as.Date(date)) |>
   slice(which.max(load))
 
-
 # --- Analysis for one year ---
 peaks_2023 <- peaks |>
   filter(year(date) == 2023)
@@ -31,7 +30,7 @@ peaks_2023_nw <- peaks |>
 
 plot(peaks_2023_nw$hour_int)
 
-peaks_2023 <- peaks_2023[, c(2, 3)]
+# peaks_2023 <- peaks_2023[, c(2, 3)]
 
 load <- peaks_2023$load
 
@@ -44,7 +43,7 @@ diff_load <- diff(load, 7)
 plot(diff_load)
 acf(diff_load, lag.max = 21)
 
-plot(hour_int)
+plot(peaks_2023$hour_int)
 
 peaks_2023_diff <- data.frame(date = peaks_2023$date[-(1:7)], load = diff(peaks_2023$load, 7), hour_int = peaks_2023$hour_int[-(1:7)])
 
@@ -76,6 +75,7 @@ fig <- ggplot() +
   labs(title = "Fitted Values of Load and Diff_Load", x = "Time", y = "Fitted Values") +
   scale_color_manual(values = c("blue", "red"), labels = c("Load", "Diff_Load"))
 fig
+ggplotly(fig)
 
 # Hour
 fig <- ggplot() +
