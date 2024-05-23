@@ -60,37 +60,43 @@ choose.arma <- function(data) {
     return(opt.model)
 }
 
-# choose.arma(load_diff$load)
+choose.arma(load_diff$load)
 # choose.arma(load_1$load)
+# Create an arima model
+model_general <- arima(load_diff$load, c(4, 0, 5), method = "ML")
 
-mu_sigma_arima <- data.frame(hour = seq(0, 23), mu = rep(0, 24), sigma = rep(0, 24))
-
-# Build an arima model for every hour
-# COMMENT: The original paper creates one model for the whole load time series and another one for the errors!!!
-# Try this approach as well!
+load_diff$resids <- residuals(model_general)
 
 for (i in seq(0, 23)) {
     print(i)
     load_h <- load_diff |>
         filter(hour(date) == i)
 
-    model <- arima(load_h$load, c(1, 0, 4), method = "ML")
-    mu_sigma_arima[i + 1, "mu"] <- model$coef["intercept"]
-    mu_sigma_arima[i + 1, "sigma"] <- sqrt(model$sigma2)
-    assign(paste0("model_", i), model)
+    mean <- mean(load_h$resids)
+    std <- sqrt(var(load_h$resids))
+    print(paste0("Mean: ", mean, "Std: ", std))
 }
 
-# Plot the residuals
-plot(residuals(model_4))
+mu_sigma_arima <- data.frame(hour = seq(0, 23), mu = rep(0, 24), sigma = rep(0, 24))
+
+for (i in seq(0, 23)) {
+    print(i)
+    load_h <- load_diff |>
+        filter(hour(date) == i)
+    mu_sigma_arima[i + 1, "mu"] <- mean(load_h$resids)
+    mu_sigma_arima[i + 1, "sigma"] <- sqrt(var(load_h$resids))
+}
+
 
 # --------- Error Learning phase ------------
 for (i in seq(0, 23)) {
     print(i)
-    # Get the model
-    model <- get(paste0("model_", i))
+    # get the hour data
+    load_h <- load_diff |>
+        filter(hour(date) == i)
 
-    # Extract the residuals from the model
-    resid <- data.frame(resid = as.vector(residuals(model)))
+    # Extract the residuals from the data
+    resid <- data.frame(resid = load_h$resids)
 
     # Standardize the residuals
     resid <- resid |>
@@ -107,7 +113,7 @@ inverse_ecdf <- function(p, i) {
     quantile(get(paste0("ecdf_", i)), p, names = FALSE)
 }
 
-plot(ecdf_5)
+plot(ecdf_11)
 
 # ---- Dependence Learning Phase ----
 
@@ -119,11 +125,12 @@ X <- matrix(nrow = m, ncol = 0)
 
 for (i in seq(0, 23)) {
     print(i)
-    # Get the model
-    model <- get(paste0("model_", i))
+    # get the hour data
+    load_h <- load_diff |>
+        filter(hour(date) == i)
 
     # get the errors
-    epsilon <- as.vector(residuals(model))
+    epsilon <- as.vector(load_h$resids)
 
     # Select only the last m errors
     epsilon <- epsilon[(length(epsilon) - m):length(epsilon)]
@@ -166,11 +173,13 @@ R_emp <- apply(X, 2, rank)
 # m defines the quantile level i.. 1- m with i/m+1 quantiles
 forecast_t <- matrix(nrow = 24, ncol = m)
 quantiles <- seq(1 / (m + 1), m / (m + 1), 1 / (m + 1))
+
+prediction_24h <- as.numeric(predict(model_general, n.ahead = 24)$pred)
+
 for (i in seq(0, 23)) {
-    # Get the prediction for the next day and...
+    # Get the prediction for the next hour of the day and...
     # ...Revert the differencing
-    model <- get(paste0("model_", i))
-    predict_point <- as.numeric(predict(model, n.ahead = 1)$pred) + tail(load$load, n = 1) + tail(load$load, n = 167)[1] - tail(load$load, n = 168)[1]
+    predict_point <- prediction_24h[i + 1] + tail(load$load, n = 1) + tail(load$load, n = 167)[1] - tail(load$load, n = 168)[1]
     forecast_t[i + 1, ] <- predict_point + mu_sigma_arima[i + 1, "mu"] + inverse_ecdf(quantiles, i) * mu_sigma_arima[i + 1, "sigma"]
 }
 quantiles
@@ -218,3 +227,8 @@ fig <- ggplot(data_long, aes(x = quantiles, y = value, color = forecast)) +
     geom_line() +
     labs(color = "Forecast")
 ggplotly(fig)
+
+# --- Getting the peaks ---
+peaks <- energy_load |>
+    group_by(as.Date(date)) |>
+    slice(which.max(load))
