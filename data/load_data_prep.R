@@ -74,3 +74,13 @@ write.csv(energy_load, file = "./data/load_15-24.csv", row.names = FALSE)
 # For 15 minutes time intervals
 energy_load <- prepare_data_3("./data/raw/2015-2024_Realisierter-Stromverbrauch_viertelstunde.csv")
 write.csv(energy_load, file = "./data/load_15-24_quartarly.csv", row.names = FALSE)
+
+# --- Prepare Peak Data ---
+
+# --- Getting the peaks ---
+peaks <- energy_load |>
+  group_by(as.Date(date)) |>
+  slice(which.max(load))
+
+# Writing the peaks
+write.csv(peaks, file = "./data/peaks-22-24.csv", row.names = FALSE)
