@@ -13,12 +13,16 @@ load <- energy_load |>
 
 # Plot the load and the diff for visual analysis
 plot(load)
+# Question: What do I want to model here? -> Right now it is only White Noise?
 acf(load$load, lag.max = 170)
+pacf(load$load, lag.max = 170)
 
 load_diff <- data.frame(date = load$date[-(1:169)], load = diff(diff(load$load, 1), 168))
 
 plot(load_diff$load)
 acf(load_diff$load, lag.max = 336)
+pacf(load_diff$load, lag.max = 336)
+
 
 # Examplary plot of the load distribution per hour
 hour <- 2

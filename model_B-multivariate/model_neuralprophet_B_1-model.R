@@ -7,105 +7,46 @@ library(copula)
 energy_load <- read.csv("./data/load_22-24.csv")
 energy_load$date <- as.POSIXct(energy_load$date, tz = "UTC")
 
-load <- energy_load |>
-    filter((year(date) == 2022)) |>
+load_test <- energy_load |>
+    filter((year(date) == 2024)) |>
     select(date, load)
 
-# Plot the load and the diff for visual analysis
-plot(load)
-acf(load$load, lag.max = 170)
+model_np <- read.csv("./data/forecasts/load_22-24_model-neuralprophet_2024IsForecasted.csv")
+str(model_np)
+model_np$ds <- as.POSIXct(model_np$ds, tz = "UTC")
 
-load_diff <- data.frame(date = load$date[-(1:169)], load = diff(diff(load$load, 1), 168))
+# Train/Test Split
+# Taking the years 2022 to 2023 for training
+df_train <- model_np |>
+    filter((year(ds) == 2022) | (year(ds) == 2023))
+df_test <- model_np |>
+    filter(year(ds) == 2024)
 
-plot(load_diff$load)
-
-acf(load_diff$load, lag.max = 336)
-
-# Examplary plot of the load distribution per hour
-hour <- 2
-# Histogramm
-load_diff |>
-    filter(hour(date) == hour) |>
-    ggplot(aes(load)) +
-    geom_histogram()
-# Time Series
-load_diff |>
-    filter(hour(date) == hour) |>
-    ggplot(aes(x = 1:length(load), y = load)) +
-    geom_point() +
-    geom_line()
-
-# ---- Specify arima model (NOT USED)---
-min.aic <- Inf
-
-choose.arma <- function(data) {
-    print("Possible Models -------------------------------------------------------------")
-    for (p in 0:5) {
-        for (q in 0:5) {
-            temp.model <- arima(data, c(p, 0, q), method = "ML")
-            temp.aic <- temp.model$aic
-
-            print(paste0("ARMA(", p, ",", q, ")     AIC = ", temp.aic))
-            if (temp.aic < min.aic) {
-                opt.p <- p
-                opt.q <- q
-                min.aic <- temp.aic
-                opt.model <- temp.model
-            }
-        }
-    }
-
-    print("")
-    print("Optimal Model -------------------------------------------------------------")
-    print(paste0("ARMA(", opt.p, ",", opt.q, ")     AIC = ", min.aic))
-    return(opt.model)
-}
-
-choose.arma(load_diff$load)
-# choose.arma(load_1$load)
-# Create an arima model
-model_general <- arima(load_diff$load, c(4, 0, 5), method = "ML")
-
-load_diff$resids <- residuals(model_general)
+# --------- Error Learning Phase ---------
+mu_sigma_np <- data.frame(hour = seq(0, 23), mu = rep(0, 24), sigma = rep(0, 24))
 
 for (i in seq(0, 23)) {
     print(i)
-    load_h <- load_diff |>
-        filter(hour(date) == i)
+    load_h <- df_train |>
+        filter(hour(ds) == i)
 
-    mean <- mean(load_h$resids)
-    std <- sqrt(var(load_h$resids))
-    print(paste0("Mean: ", mean, "Std: ", std))
-}
+    mean <- mean(load_h$residuals)
+    std <- sqrt(var(load_h$residuals))
 
-mu_sigma_arima <- data.frame(hour = seq(0, 23), mu = rep(0, 24), sigma = rep(0, 24))
-
-for (i in seq(0, 23)) {
-    print(i)
-    load_h <- load_diff |>
-        filter(hour(date) == i)
-    mu_sigma_arima[i + 1, "mu"] <- mean(load_h$resids)
-    mu_sigma_arima[i + 1, "sigma"] <- sqrt(var(load_h$resids))
-}
-
-
-# --------- Error Learning phase ------------
-for (i in seq(0, 23)) {
-    print(i)
-    # get the hour data
-    load_h <- load_diff |>
-        filter(hour(date) == i)
+    mu_sigma_np[i + 1, "mu"] <- mean
+    mu_sigma_np[i + 1, "sigma"] <- std
 
     # Extract the residuals from the data
-    resid <- data.frame(resid = load_h$resids)
+    resid <- data.frame(resid = load_h$residuals)
 
     # Standardize the residuals
     resid <- resid |>
-        mutate(resid_std = (resid - mu_sigma_arima[i + 1, "mu"]) / mu_sigma_arima[i + 1, "sigma"])
+        mutate(resid_std = (resid - mu_sigma_np[i + 1, "mu"]) / mu_sigma_np[i + 1, "sigma"])
 
     # Generate the ECDF
     assign(paste0("ecdf_", i), ecdf(resid$resid_std))
 }
+
 
 # Generate the Inverse ECDF
 # Input: p... Probabilty , i... hour
@@ -114,10 +55,10 @@ inverse_ecdf <- function(p, i) {
     quantile(get(paste0("ecdf_", i)), p, names = FALSE)
 }
 
-plot(ecdf_11)
+plot(ecdf_23)
 
 # ---- Dependence Learning Phase ----
-
+# NOT IMPLEMENTED
 # Define the length m of the learning phase
 m <- 90
 
@@ -172,18 +113,18 @@ R_emp <- apply(X, 2, rank)
 # ------- Prediction phase -------
 # Generate the 24 univariate for every hour
 # m defines the quantile level i.. 1- m with i/m+1 quantiles
+m <- 90
 forecast_t <- matrix(nrow = 24, ncol = m)
 quantiles <- seq(1 / (m + 1), m / (m + 1), 1 / (m + 1))
 
-prediction_24h <- as.numeric(predict(model_general, n.ahead = 24)$pred)
+predict_point <- df_test[1:24, "y_hat"]
 
 for (i in seq(0, 23)) {
-    # Get the prediction for the next hour of the day and...
-    # ...Revert the differencing
-    predict_point <- prediction_24h[i + 1] + tail(load$load, n = 1) + tail(load$load, n = 167)[1] - tail(load$load, n = 168)[1]
-    forecast_t[i + 1, ] <- predict_point + mu_sigma_arima[i + 1, "mu"] + inverse_ecdf(quantiles, i) * mu_sigma_arima[i + 1, "sigma"]
+    # Get the prediction for the next hour of the day and the the errors to get distribution
+    forecast_t[i + 1, ] <- predict_point[i + 1] + mu_sigma_np[i + 1, "mu"] + inverse_ecdf(quantiles, i) * mu_sigma_np[i + 1, "sigma"]
 }
 quantiles
+
 
 # Dependence Learning: Pairing up the Copula
 multivariate_forecast <- matrix(nrow = nrow(R_emp), ncol = ncol(R_emp))
@@ -200,7 +141,7 @@ for (i in seq(1:24)) {
 plot(multivariate_forecast[5, ], type = "l")
 
 
-# Plot the result
+# -------- Plotting the Results ----------
 # Version 1
 data <- data.frame(forecast_t_1 = forecast_t[1, ], forecast_t_10 = forecast_t[10, ], forecast_t_18 = forecast_t[18, ], quantiles = quantiles)
 
@@ -228,8 +169,3 @@ fig <- ggplot(data_long, aes(x = quantiles, y = value, color = forecast)) +
     geom_line() +
     labs(color = "Forecast")
 ggplotly(fig)
-
-# --- Getting the peaks ---
-peaks <- energy_load |>
-    group_by(as.Date(date)) |>
-    slice(which.max(load))
