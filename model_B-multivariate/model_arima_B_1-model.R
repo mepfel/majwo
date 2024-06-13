@@ -8,63 +8,54 @@ energy_load <- read.csv("./data/load_22-24.csv")
 energy_load$date <- as.POSIXct(energy_load$date, tz = "UTC")
 
 load <- energy_load |>
-    filter((year(date) == 2022)) |>
-    select(date, load)
+    filter((year(date) == 2022) | (year(date) == 2023))
+#    select(date, load)
 
 # Plot the load and the diff for visual analysis
 plot(load)
 acf(load$load, lag.max = 170)
-
-load_diff <- data.frame(date = load$date[-(1:169)], load = diff(diff(load$load, 1), 168))
-
-plot(load_diff$load)
-acf(load_diff$load, lag.max = 336)
+pacf(load$load, lag.max = 170)
 
 # Examplary plot of the load distribution per hour
 hour <- 2
 # Histogramm
-load_diff |>
+load |>
     filter(hour(date) == hour) |>
     ggplot(aes(load)) +
     geom_histogram()
 # Time Series
-load_diff |>
+load |>
     filter(hour(date) == hour) |>
     ggplot(aes(x = 1:length(load), y = load)) +
     geom_point() +
     geom_line()
 
-# ---- Specify arima model (NOT USED)---
-min.aic <- Inf
+# Create an ar-model
 
-choose.arma <- function(data) {
-    print("Possible Models -------------------------------------------------------------")
-    for (p in 0:5) {
-        for (q in 0:5) {
-            temp.model <- arima(data, c(p, 0, q), method = "ML")
-            temp.aic <- temp.model$aic
+model_new <- arima(load$load, c(12, 0, 0), xreg = cbind(load$working_day, load$month_int))
 
-            print(paste0("ARMA(", p, ",", q, ")     AIC = ", temp.aic))
-            if (temp.aic < min.aic) {
-                opt.p <- p
-                opt.q <- q
-                min.aic <- temp.aic
-                opt.model <- temp.model
-            }
-        }
-    }
+load["resids"] <- residuals(model_new)
+load["load_hat"] <- load$load - load$resids
 
-    print("")
-    print("Optimal Model -------------------------------------------------------------")
-    print(paste0("ARMA(", opt.p, ",", opt.q, ")     AIC = ", min.aic))
-    return(opt.model)
-}
+load_test <- energy_load |>
+    filter(year(date) == 2024)
+prediction_24h <- as.numeric(predict(model_new, n.ahead = 24, newxreg = cbind(load_test[121:144, ]$working_day, load_test[1:24, ]$month_int))$pred)
 
-choose.arma(load_diff$load)
-# choose.arma(load_1$load)
-# Create an arima model
-model_general <- arima(load_diff$load, c(4, 0, 5), method = "ML")
+ggplot() +
+    geom_line(aes(x = 1:length(prediction_24h), y = prediction_24h), color = "blue") +
+    geom_line(aes(x = 1:length(prediction_24h), y = load_test[1:24, ]$load))
 
+
+summary(model_new)
+
+load |>
+    filter(year(date) == 2023 & month_int == 10) |>
+    ggplot() +
+    geom_line(aes(x = date, y = load)) +
+    geom_line(aes(x = date, y = load_hat), color = "blue")
+
+
+#--------------------------------- NOT IMPLEMENTED ---------------
 load_diff$resids <- residuals(model_general)
 
 for (i in seq(0, 23)) {
