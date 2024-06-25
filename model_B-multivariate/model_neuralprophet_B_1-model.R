@@ -22,6 +22,10 @@ df_train <- model_np |>
 df_test <- model_np |>
     filter(year(ds) == 2024)
 
+df_test_peaks <- df_test |>
+    group_by(as.Date(ds)) |>
+    slice(which.max(y))
+
 # --------- Error Learning Phase ---------
 mu_sigma_np <- data.frame(hour = seq(0, 23), mu = rep(0, 24), sigma = rep(0, 24))
 
@@ -58,7 +62,6 @@ inverse_ecdf <- function(p, i) {
 plot(ecdf_23)
 
 # ---- Dependence Learning Phase ----
-# NOT IMPLEMENTED
 # Define the length m of the learning phase
 m <- 90
 
@@ -68,17 +71,17 @@ X <- matrix(nrow = m, ncol = 0)
 for (i in seq(0, 23)) {
     print(i)
     # get the hour data
-    load_h <- load_diff |>
-        filter(hour(date) == i)
+    load_h <- df_train |>
+        filter(hour(ds) == i)
 
     # get the errors
-    epsilon <- as.vector(load_h$resids)
+    epsilon <- as.vector(load_h$residuals)
 
     # Select only the last m errors
     epsilon <- epsilon[(length(epsilon) - m):length(epsilon)]
 
     # standardize the errors
-    epsilon_std <- (epsilon - mu_sigma_arima[i + 1, "mu"]) / mu_sigma_arima[i + 1, "sigma"]
+    epsilon_std <- (epsilon - mu_sigma_np[i + 1, "mu"]) / mu_sigma_np[i + 1, "sigma"]
 
     # Apply the ecdf
     ecdf <- get(paste0("ecdf_", i))
@@ -89,22 +92,6 @@ for (i in seq(0, 23)) {
 
 # Create the Copula and the Rank Matrix
 
-# 1) Parametric Approch
-# Fit a Copula
-copula <- empCopula(X)
-# Draw a sample from the copula
-sample_draw <- rCopula(m, copula)
-# Apply the rank function to get the Rank Matrix
-R_copula <- apply(sample_draw, 2, rank)
-
-# --- Auxilary Copula Functions ---
-# Draw a random sample of 23 from the copula
-test <- rCopula(m, copula)
-
-# Get the probablilites for u values from the copula
-# Alternative: C.n(c(0.5, 0.5), X)
-pCopula(c(0.5, 0.5), copula)
-
 # 2) Non-Parametric Approach
 # Consider X as the sample from the empirical copula
 # Apply the rank function to get the rank matrix
@@ -112,16 +99,15 @@ R_emp <- apply(X, 2, rank)
 
 # ------- Prediction phase -------
 # Generate the 24 univariate for every hour
-# m defines the quantile level i.. 1- m with i/m+1 quantiles
-m <- 90
-forecast_t <- matrix(nrow = 24, ncol = m)
+# m also defines the quantile level i.. 1- m with i/m+1 quantiles
+univariate_forecast_t <- matrix(nrow = 24, ncol = m)
 quantiles <- seq(1 / (m + 1), m / (m + 1), 1 / (m + 1))
 
 predict_point <- df_test[1:24, "y_hat"]
 
 for (i in seq(0, 23)) {
     # Get the prediction for the next hour of the day and the the errors to get distribution
-    forecast_t[i + 1, ] <- predict_point[i + 1] + mu_sigma_np[i + 1, "mu"] + inverse_ecdf(quantiles, i) * mu_sigma_np[i + 1, "sigma"]
+    univariate_forecast_t[i + 1, ] <- predict_point[i + 1] + mu_sigma_np[i + 1, "mu"] + inverse_ecdf(quantiles, i) * mu_sigma_np[i + 1, "sigma"]
 }
 quantiles
 
@@ -132,13 +118,22 @@ multivariate_forecast <- matrix(nrow = nrow(R_emp), ncol = ncol(R_emp))
 for (i in seq(1:24)) {
     j <- 1
     for (r in R_emp[, i]) {
-        print(r)
         multivariate_forecast[j, i] <- forecast_t[i, r]
         j <- j + 1
     }
 }
 
+# Extracting the peaks from the multivariate distribution
+peaks_dis_B <- apply(multivariate_forecast, MARGIN = 1, FUN = max)
+
+hist(peaks_dis_B, main = "Histogram of Peaks Distribution B", xlab = "Peaks", breaks = "Sturges")
+
+crps_sample(as.numeric(df_test_peaks[1, 2]), peaks_dis_B)
+# First Run: CRPS: 14310.74
+
+
 plot(multivariate_forecast[5, ], type = "l")
+plot(df_test[1:24, "y"], type = "l")
 
 
 # -------- Plotting the Results ----------
