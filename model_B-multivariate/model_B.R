@@ -15,9 +15,10 @@ model$ds <- as.POSIXct(model$ds, tz = "UTC")
 
 # specify the length for the error learning phase in days
 length <- 365
-getCRPS <- function(d) {
+getCRPS_B <- function(d) {
     # --------- Error Learning Phase ---------
     # Getting the test data: starting from day i get the next 365 days
+    # Achtung: Hier dürfen nur Training oder Testing data verwendet werden
     df_train <- model[((d - 1) * 24 + 1):(((364 + d) * 24) - 1), ]
 
     mu_sigma <- data.frame(hour = seq(0, 23), mu = rep(0, 24), sigma = rep(0, 24))
@@ -91,11 +92,12 @@ getCRPS <- function(d) {
     # ------- Prediction phase -------
 
     # Generate the 24 univariate for every hour
-    # m also defines the quantile level i.. 1- m with i/m+1 quantiles
+    # m also defines the quantile level i.. 1 - m with i/m+1 quantiles
     univariate_forecast_t <- matrix(nrow = 24, ncol = m)
     quantiles <- seq(1 / (m + 1), m / (m + 1), 1 / (m + 1))
 
     # Get the next 24 hours after the testing period
+    # Hier nur Testing data vom Model!!!
     df_test <- model[((d + length - 1) * 24):((d + length) * 24 - 1), ]
 
     predict_point <- df_test[, "y_hat"]
@@ -130,10 +132,10 @@ getCRPS <- function(d) {
 }
 
 
-getCRPS(30)
+getCRPS_B(30)
 
 # specify the length for rolling iterations
 len_test <- 2
 for (d in seq(1, len_test)) {
-    getCRPS(d)
+    getCRPS_B(d)
 }
