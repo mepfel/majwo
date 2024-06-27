@@ -4,18 +4,25 @@ library(ggplot2)
 library(copula)
 # This is a first general implementation of version B
 
-# --- Load the energy data ----
-energy_load <- read.csv("./data/load_22-24.csv")
-energy_load$date <- as.POSIXct(energy_load$date, tz = "UTC")
-
 # Load the model data
+
 # Here: NeuralProphet
-model <- read.csv("./data/forecasts/load_22-24_model-neuralprophet_2024IsForecasted.csv")
+# model <- read.csv("./data/forecasts/load_22-24_model-neuralprophet_2024IsForecasted.csv")
+# model$ds <- as.POSIXct(model$ds, tz = "UTC")
+
+# Here: Arma
+model <- read.csv("./data/forecasts/load_22-24_model-arma.csv")
 model$ds <- as.POSIXct(model$ds, tz = "UTC")
+
 
 # specify the length for the error learning phase in days
 length <- 365
+# Filter only for the years 2023 (Training) and 2024 (Testing)
+model <- model |>
+    filter((year(ds) == 2023) | (year(ds) == 2024))
+
 getCRPS_B <- function(d) {
+    print(d)
     # --------- Error Learning Phase ---------
     # Getting the test data: starting from day i get the next 365 days
     # Achtung: Hier dürfen nur Training oder Testing data verwendet werden
@@ -100,7 +107,7 @@ getCRPS_B <- function(d) {
     # Hier nur Testing data vom Model!!!
     df_test <- model[((d + length - 1) * 24):((d + length) * 24 - 1), ]
 
-    predict_point <- df_test[, "y_hat"]
+    predict_point <- df_test[, "yhat"]
 
     for (i in seq(0, 23)) {
         # Get the prediction for the next hour of the day and the the errors to get distribution
@@ -131,11 +138,14 @@ getCRPS_B <- function(d) {
     return(crps_sample(peak, peaks_dis_B))
 }
 
-
-getCRPS_B(30)
-
-# specify the length for rolling iterations
-len_test <- 2
+# specify the length for rolling iterations in days
+len_test <- 28
+crps_scores <- list()
 for (d in seq(1, len_test)) {
-    getCRPS_B(d)
+    crps_score <- getCRPS_B(d)
+    # Append the CRPS score to the list
+    crps_scores[[d]] <- crps_score
 }
+
+print("Mean CRPS for 28 days in 2024")
+print(mean(unlist(crps_scores)))

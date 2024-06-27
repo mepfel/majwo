@@ -16,16 +16,14 @@ peaks <- energy_load |>
 # filter(year(date) == 2023)
 
 peak_load <- peaks$load
-# Difference the load peak with the duration of one week (7 days)
-peak_load_diff <- diff(peak_load, 7)
 
 # Plot the peak for visual analysis
 plot(peak_load)
-plot(peak_load_diff)
-acf(diff(peak_load, 7), lag.max = 21)
+acf(peak_load, lag.max = 21)
+pacf(peak_load, lag.max = 21)
 
 # Build an arima model
-model <- arima(peak_load_diff, c(1, 0, 7), method = "ML")
+model <- arima(peak_load, c(7, 0, 1), method = "ML")
 
 # Plot the residuals
 plot(residuals(model))
@@ -36,6 +34,7 @@ resid <- data.frame(resid = as.vector(residuals(model)))
 # Standardize the residuals
 mu_resid <- model$coef["intercept"]
 sigma_resid <- sqrt(model$sigma2)
+
 resid <- resid |>
     mutate(resid_std = (resid - mu_resid) / sigma_resid)
 

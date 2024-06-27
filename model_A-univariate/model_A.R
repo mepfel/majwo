@@ -2,27 +2,26 @@ library(tidyverse)
 library(scoringRules)
 library(ggplot2)
 
-# --- Load the energy data ----
-energy_load <- read.csv("./data/load_22-24.csv")
-energy_load$date <- as.POSIXct(energy_load$date, tz = "UTC")
-
-# --- Getting the peaks ---
-peaks <- energy_load |>
-    group_by(as.Date(date)) |>
-    slice(which.max(load))
-
 # Load the model data
+
 # Here: NeuralProphet
 model <- read.csv("./data/forecasts/peaks_22-24_model-neuralprophet.csv")
 model$ds <- as.POSIXct(model$ds, tz = "UTC")
 
+# Here: Arma
+# model <- read.csv("./data/forecasts/peaks_22-24_model-arma.csv")
+# model$ds <- as.POSIXct(model$ds, tz = "UTC")
+
 # specify the length for the error learning phase in days
 length <- 365
+# Filter only for the years 2023 (Training) and 2024 (Testing)
+model <- model |>
+    filter((year(ds) == 2023) | (year(ds) == 2024))
 
 
 getCRPS_A <- function(d) {
     # Parameter: d day to predict
-
+    print(d)
     # --------- Error Learning Phase ---------
 
     # Getting the test data: starting from day i get the next 365 days
@@ -77,6 +76,15 @@ getCRPS_A <- function(d) {
     # CRPS-Score
     crps_sample(peak, peaks_dis_A[, "values"])
 }
-# Check if the loop works!!!!
-# d <- 1 in the loop is different when running it seperately
-getCRPS_A(7)
+
+# specify the length for rolling iterations in days
+len_test <- 28
+crps_scores <- list()
+for (d in seq(1, len_test)) {
+    crps_score <- getCRPS_A(d)
+    # Append the CRPS score to the list
+    crps_scores[[d]] <- crps_score
+}
+
+print("Mean CRPS for 28 days in 2024")
+print(mean(unlist(crps_scores)))
