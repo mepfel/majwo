@@ -1,0 +1,184 @@
+Date,LocalName,Name,CountryCode,Fixed,Global,LaunchYear,Type,Counties
+2015-01-01,Neujahr,New Year's Day,DE,False,True,,Public,
+2015-01-06,Heilige Drei Könige,Epiphany,DE,False,False,,Public,"DE-BW,DE-BY,DE-ST"
+2015-04-03,Karfreitag,Good Friday,DE,False,True,,Public,
+2015-04-05,Ostersonntag,Easter Sunday,DE,False,False,,Public,DE-BB
+2015-04-06,Ostermontag,Easter Monday,DE,False,True,,Public,
+2015-05-01,Tag der Arbeit,Labour Day,DE,False,True,,Public,
+2015-05-14,Christi Himmelfahrt,Ascension Day,DE,False,True,,Public,
+2015-05-24,Pfingstsonntag,Pentecost,DE,False,False,,Public,"DE-BB,DE-HE"
+2015-05-25,Pfingstmontag,Whit Monday,DE,False,True,,Public,
+2015-06-04,Fronleichnam,Corpus Christi,DE,False,False,,Public,"DE-BW,DE-BY,DE-HE,DE-NW,DE-RP,DE-SL"
+2015-08-15,Mariä Himmelfahrt,Assumption Day,DE,False,False,,Public,DE-SL
+2015-10-03,Tag der Deutschen Einheit,German Unity Day,DE,False,True,,Public,
+2015-10-31,Reformationstag,Reformation Day,DE,False,False,,Public,"DE-BB,DE-MV,DE-SN,DE-ST,DE-TH"
+2015-11-01,Allerheiligen,All Saints' Day,DE,False,False,,Public,"DE-BW,DE-BY,DE-NW,DE-RP,DE-SL"
+2015-11-18,Buß- und Bettag,Repentance and Prayer Day,DE,False,False,,Public,DE-SN
+2015-12-25,Erster Weihnachtstag,Christmas Day,DE,False,True,,Public,
+2015-12-26,Zweiter Weihnachtstag,St. Stephen's Day,DE,False,True,,Public,
+2016-01-01,Neujahr,New Year's Day,DE,False,True,,Public,
+2016-01-06,Heilige Drei Könige,Epiphany,DE,False,False,,Public,"DE-BW,DE-BY,DE-ST"
+2016-03-25,Karfreitag,Good Friday,DE,False,True,,Public,
+2016-03-27,Ostersonntag,Easter Sunday,DE,False,False,,Public,DE-BB
+2016-03-28,Ostermontag,Easter Monday,DE,False,True,,Public,
+2016-05-01,Tag der Arbeit,Labour Day,DE,False,True,,Public,
+2016-05-05,Christi Himmelfahrt,Ascension Day,DE,False,True,,Public,
+2016-05-15,Pfingstsonntag,Pentecost,DE,False,False,,Public,"DE-BB,DE-HE"
+2016-05-16,Pfingstmontag,Whit Monday,DE,False,True,,Public,
+2016-05-26,Fronleichnam,Corpus Christi,DE,False,False,,Public,"DE-BW,DE-BY,DE-HE,DE-NW,DE-RP,DE-SL"
+2016-08-15,Mariä Himmelfahrt,Assumption Day,DE,False,False,,Public,DE-SL
+2016-10-03,Tag der Deutschen Einheit,German Unity Day,DE,False,True,,Public,
+2016-10-31,Reformationstag,Reformation Day,DE,False,False,,Public,"DE-BB,DE-MV,DE-SN,DE-ST,DE-TH"
+2016-11-01,Allerheiligen,All Saints' Day,DE,False,False,,Public,"DE-BW,DE-BY,DE-NW,DE-RP,DE-SL"
+2016-11-16,Buß- und Bettag,Repentance and Prayer Day,DE,False,False,,Public,DE-SN
+2016-12-25,Erster Weihnachtstag,Christmas Day,DE,False,True,,Public,
+2016-12-26,Zweiter Weihnachtstag,St. Stephen's Day,DE,False,True,,Public,
+2017-01-01,Neujahr,New Year's Day,DE,False,True,,Public,
+2017-01-06,Heilige Drei Könige,Epiphany,DE,False,False,,Public,"DE-BW,DE-BY,DE-ST"
+2017-04-14,Karfreitag,Good Friday,DE,False,True,,Public,
+2017-04-16,Ostersonntag,Easter Sunday,DE,False,False,,Public,DE-BB
+2017-04-17,Ostermontag,Easter Monday,DE,False,True,,Public,
+2017-05-01,Tag der Arbeit,Labour Day,DE,False,True,,Public,
+2017-05-25,Christi Himmelfahrt,Ascension Day,DE,False,True,,Public,
+2017-06-04,Pfingstsonntag,Pentecost,DE,False,False,,Public,"DE-BB,DE-HE"
+2017-06-05,Pfingstmontag,Whit Monday,DE,False,True,,Public,
+2017-06-15,Fronleichnam,Corpus Christi,DE,False,False,,Public,"DE-BW,DE-BY,DE-HE,DE-NW,DE-RP,DE-SL"
+2017-08-15,Mariä Himmelfahrt,Assumption Day,DE,False,False,,Public,DE-SL
+2017-10-03,Tag der Deutschen Einheit,German Unity Day,DE,False,True,,Public,
+2017-10-31,Reformationstag,Reformation Day,DE,False,True,,Public,
+2017-11-01,Allerheiligen,All Saints' Day,DE,False,False,,Public,"DE-BW,DE-BY,DE-NW,DE-RP,DE-SL"
+2017-11-22,Buß- und Bettag,Repentance and Prayer Day,DE,False,False,,Public,DE-SN
+2017-12-25,Erster Weihnachtstag,Christmas Day,DE,False,True,,Public,
+2017-12-26,Zweiter Weihnachtstag,St. Stephen's Day,DE,False,True,,Public,
+2018-01-01,Neujahr,New Year's Day,DE,False,True,,Public,
+2018-01-06,Heilige Drei Könige,Epiphany,DE,False,False,,Public,"DE-BW,DE-BY,DE-ST"
+2018-03-30,Karfreitag,Good Friday,DE,False,True,,Public,
+2018-04-01,Ostersonntag,Easter Sunday,DE,False,False,,Public,DE-BB
+2018-04-02,Ostermontag,Easter Monday,DE,False,True,,Public,
+2018-05-01,Tag der Arbeit,Labour Day,DE,False,True,,Public,
+2018-05-10,Christi Himmelfahrt,Ascension Day,DE,False,True,,Public,
+2018-05-20,Pfingstsonntag,Pentecost,DE,False,False,,Public,"DE-BB,DE-HE"
+2018-05-21,Pfingstmontag,Whit Monday,DE,False,True,,Public,
+2018-05-31,Fronleichnam,Corpus Christi,DE,False,False,,Public,"DE-BW,DE-BY,DE-HE,DE-NW,DE-RP,DE-SL"
+2018-08-15,Mariä Himmelfahrt,Assumption Day,DE,False,False,,Public,DE-SL
+2018-10-03,Tag der Deutschen Einheit,German Unity Day,DE,False,True,,Public,
+2018-10-31,Reformationstag,Reformation Day,DE,False,False,,Public,"DE-BB,DE-MV,DE-SN,DE-ST,DE-TH,DE-HB,DE-HH,DE-NI,DE-SH"
+2018-11-01,Allerheiligen,All Saints' Day,DE,False,False,,Public,"DE-BW,DE-BY,DE-NW,DE-RP,DE-SL"
+2018-11-21,Buß- und Bettag,Repentance and Prayer Day,DE,False,False,,Public,DE-SN
+2018-12-25,Erster Weihnachtstag,Christmas Day,DE,False,True,,Public,
+2018-12-26,Zweiter Weihnachtstag,St. Stephen's Day,DE,False,True,,Public,
+2019-01-01,Neujahr,New Year's Day,DE,False,True,,Public,
+2019-01-06,Heilige Drei Könige,Epiphany,DE,False,False,,Public,"DE-BW,DE-BY,DE-ST"
+2019-03-08,Internationaler Frauentag,International Women's Day,DE,False,False,,Public,DE-BE
+2019-04-19,Karfreitag,Good Friday,DE,False,True,,Public,
+2019-04-21,Ostersonntag,Easter Sunday,DE,False,False,,Public,DE-BB
+2019-04-22,Ostermontag,Easter Monday,DE,False,True,,Public,
+2019-05-01,Tag der Arbeit,Labour Day,DE,False,True,,Public,
+2019-05-30,Christi Himmelfahrt,Ascension Day,DE,False,True,,Public,
+2019-06-09,Pfingstsonntag,Pentecost,DE,False,False,,Public,"DE-BB,DE-HE"
+2019-06-10,Pfingstmontag,Whit Monday,DE,False,True,,Public,
+2019-06-20,Fronleichnam,Corpus Christi,DE,False,False,,Public,"DE-BW,DE-BY,DE-HE,DE-NW,DE-RP,DE-SL"
+2019-08-15,Mariä Himmelfahrt,Assumption Day,DE,False,False,,Public,DE-SL
+2019-09-20,Weltkindertag,World Children's Day,DE,False,False,,Public,DE-TH
+2019-10-03,Tag der Deutschen Einheit,German Unity Day,DE,False,True,,Public,
+2019-10-31,Reformationstag,Reformation Day,DE,False,False,,Public,"DE-BB,DE-MV,DE-SN,DE-ST,DE-TH,DE-HB,DE-HH,DE-NI,DE-SH"
+2019-11-01,Allerheiligen,All Saints' Day,DE,False,False,,Public,"DE-BW,DE-BY,DE-NW,DE-RP,DE-SL"
+2019-11-20,Buß- und Bettag,Repentance and Prayer Day,DE,False,False,,Public,DE-SN
+2019-12-25,Erster Weihnachtstag,Christmas Day,DE,False,True,,Public,
+2019-12-26,Zweiter Weihnachtstag,St. Stephen's Day,DE,False,True,,Public,
+2020-01-01,Neujahr,New Year's Day,DE,False,True,,Public,
+2020-01-06,Heilige Drei Könige,Epiphany,DE,False,False,,Public,"DE-BW,DE-BY,DE-ST"
+2020-03-08,Internationaler Frauentag,International Women's Day,DE,False,False,,Public,DE-BE
+2020-04-10,Karfreitag,Good Friday,DE,False,True,,Public,
+2020-04-12,Ostersonntag,Easter Sunday,DE,False,False,,Public,DE-BB
+2020-04-13,Ostermontag,Easter Monday,DE,False,True,,Public,
+2020-05-01,Tag der Arbeit,Labour Day,DE,False,True,,Public,
+2020-05-08,Tag der Befreiung,Liberation Day,DE,False,False,,Public,DE-BE
+2020-05-21,Christi Himmelfahrt,Ascension Day,DE,False,True,,Public,
+2020-05-31,Pfingstsonntag,Pentecost,DE,False,False,,Public,"DE-BB,DE-HE"
+2020-06-01,Pfingstmontag,Whit Monday,DE,False,True,,Public,
+2020-06-11,Fronleichnam,Corpus Christi,DE,False,False,,Public,"DE-BW,DE-BY,DE-HE,DE-NW,DE-RP,DE-SL"
+2020-08-15,Mariä Himmelfahrt,Assumption Day,DE,False,False,,Public,DE-SL
+2020-09-20,Weltkindertag,World Children's Day,DE,False,False,,Public,DE-TH
+2020-10-03,Tag der Deutschen Einheit,German Unity Day,DE,False,True,,Public,
+2020-10-31,Reformationstag,Reformation Day,DE,False,False,,Public,"DE-BB,DE-MV,DE-SN,DE-ST,DE-TH,DE-HB,DE-HH,DE-NI,DE-SH"
+2020-11-01,Allerheiligen,All Saints' Day,DE,False,False,,Public,"DE-BW,DE-BY,DE-NW,DE-RP,DE-SL"
+2020-11-18,Buß- und Bettag,Repentance and Prayer Day,DE,False,False,,Public,DE-SN
+2020-12-25,Erster Weihnachtstag,Christmas Day,DE,False,True,,Public,
+2020-12-26,Zweiter Weihnachtstag,St. Stephen's Day,DE,False,True,,Public,
+2021-01-01,Neujahr,New Year's Day,DE,False,True,,Public,
+2021-01-06,Heilige Drei Könige,Epiphany,DE,False,False,,Public,"DE-BW,DE-BY,DE-ST"
+2021-03-08,Internationaler Frauentag,International Women's Day,DE,False,False,,Public,DE-BE
+2021-04-02,Karfreitag,Good Friday,DE,False,True,,Public,
+2021-04-04,Ostersonntag,Easter Sunday,DE,False,False,,Public,DE-BB
+2021-04-05,Ostermontag,Easter Monday,DE,False,True,,Public,
+2021-05-01,Tag der Arbeit,Labour Day,DE,False,True,,Public,
+2021-05-13,Christi Himmelfahrt,Ascension Day,DE,False,True,,Public,
+2021-05-23,Pfingstsonntag,Pentecost,DE,False,False,,Public,"DE-BB,DE-HE"
+2021-05-24,Pfingstmontag,Whit Monday,DE,False,True,,Public,
+2021-06-03,Fronleichnam,Corpus Christi,DE,False,False,,Public,"DE-BW,DE-BY,DE-HE,DE-NW,DE-RP,DE-SL"
+2021-08-15,Mariä Himmelfahrt,Assumption Day,DE,False,False,,Public,DE-SL
+2021-09-20,Weltkindertag,World Children's Day,DE,False,False,,Public,DE-TH
+2021-10-03,Tag der Deutschen Einheit,German Unity Day,DE,False,True,,Public,
+2021-10-31,Reformationstag,Reformation Day,DE,False,False,,Public,"DE-BB,DE-MV,DE-SN,DE-ST,DE-TH,DE-HB,DE-HH,DE-NI,DE-SH"
+2021-11-01,Allerheiligen,All Saints' Day,DE,False,False,,Public,"DE-BW,DE-BY,DE-NW,DE-RP,DE-SL"
+2021-11-17,Buß- und Bettag,Repentance and Prayer Day,DE,False,False,,Public,DE-SN
+2021-12-25,Erster Weihnachtstag,Christmas Day,DE,False,True,,Public,
+2021-12-26,Zweiter Weihnachtstag,St. Stephen's Day,DE,False,True,,Public,
+2022-01-01,Neujahr,New Year's Day,DE,False,True,,Public,
+2022-01-06,Heilige Drei Könige,Epiphany,DE,False,False,,Public,"DE-BW,DE-BY,DE-ST"
+2022-03-08,Internationaler Frauentag,International Women's Day,DE,False,False,,Public,DE-BE
+2022-04-15,Karfreitag,Good Friday,DE,False,True,,Public,
+2022-04-17,Ostersonntag,Easter Sunday,DE,False,False,,Public,DE-BB
+2022-04-18,Ostermontag,Easter Monday,DE,False,True,,Public,
+2022-05-01,Tag der Arbeit,Labour Day,DE,False,True,,Public,
+2022-05-26,Christi Himmelfahrt,Ascension Day,DE,False,True,,Public,
+2022-06-05,Pfingstsonntag,Pentecost,DE,False,False,,Public,"DE-BB,DE-HE"
+2022-06-06,Pfingstmontag,Whit Monday,DE,False,True,,Public,
+2022-06-16,Fronleichnam,Corpus Christi,DE,False,False,,Public,"DE-BW,DE-BY,DE-HE,DE-NW,DE-RP,DE-SL"
+2022-08-15,Mariä Himmelfahrt,Assumption Day,DE,False,False,,Public,DE-SL
+2022-09-20,Weltkindertag,World Children's Day,DE,False,False,,Public,DE-TH
+2022-10-03,Tag der Deutschen Einheit,German Unity Day,DE,False,True,,Public,
+2022-10-31,Reformationstag,Reformation Day,DE,False,False,,Public,"DE-BB,DE-MV,DE-SN,DE-ST,DE-TH,DE-HB,DE-HH,DE-NI,DE-SH"
+2022-11-01,Allerheiligen,All Saints' Day,DE,False,False,,Public,"DE-BW,DE-BY,DE-NW,DE-RP,DE-SL"
+2022-11-16,Buß- und Bettag,Repentance and Prayer Day,DE,False,False,,Public,DE-SN
+2022-12-25,Erster Weihnachtstag,Christmas Day,DE,False,True,,Public,
+2022-12-26,Zweiter Weihnachtstag,St. Stephen's Day,DE,False,True,,Public,
+2023-01-01,Neujahr,New Year's Day,DE,False,True,,Public,
+2023-01-06,Heilige Drei Könige,Epiphany,DE,False,False,,Public,"DE-BW,DE-BY,DE-ST"
+2023-03-08,Internationaler Frauentag,International Women's Day,DE,False,False,,Public,"DE-BE,DE-MV"
+2023-04-07,Karfreitag,Good Friday,DE,False,True,,Public,
+2023-04-09,Ostersonntag,Easter Sunday,DE,False,False,,Public,DE-BB
+2023-04-10,Ostermontag,Easter Monday,DE,False,True,,Public,
+2023-05-01,Tag der Arbeit,Labour Day,DE,False,True,,Public,
+2023-05-18,Christi Himmelfahrt,Ascension Day,DE,False,True,,Public,
+2023-05-28,Pfingstsonntag,Pentecost,DE,False,False,,Public,"DE-BB,DE-HE"
+2023-05-29,Pfingstmontag,Whit Monday,DE,False,True,,Public,
+2023-06-08,Fronleichnam,Corpus Christi,DE,False,False,,Public,"DE-BW,DE-BY,DE-HE,DE-NW,DE-RP,DE-SL"
+2023-08-15,Mariä Himmelfahrt,Assumption Day,DE,False,False,,Public,DE-SL
+2023-09-20,Weltkindertag,World Children's Day,DE,False,False,,Public,DE-TH
+2023-10-03,Tag der Deutschen Einheit,German Unity Day,DE,False,True,,Public,
+2023-10-31,Reformationstag,Reformation Day,DE,False,False,,Public,"DE-BB,DE-MV,DE-SN,DE-ST,DE-TH,DE-HB,DE-HH,DE-NI,DE-SH"
+2023-11-01,Allerheiligen,All Saints' Day,DE,False,False,,Public,"DE-BW,DE-BY,DE-NW,DE-RP,DE-SL"
+2023-11-22,Buß- und Bettag,Repentance and Prayer Day,DE,False,False,,Public,DE-SN
+2023-12-25,Erster Weihnachtstag,Christmas Day,DE,False,True,,Public,
+2023-12-26,Zweiter Weihnachtstag,St. Stephen's Day,DE,False,True,,Public,
+2024-01-01,Neujahr,New Year's Day,DE,False,True,,Public,
+2024-01-06,Heilige Drei Könige,Epiphany,DE,False,False,,Public,"DE-BW,DE-BY,DE-ST"
+2024-03-08,Internationaler Frauentag,International Women's Day,DE,False,False,,Public,"DE-BE,DE-MV"
+2024-03-29,Karfreitag,Good Friday,DE,False,True,,Public,
+2024-03-31,Ostersonntag,Easter Sunday,DE,False,False,,Public,DE-BB
+2024-04-01,Ostermontag,Easter Monday,DE,False,True,,Public,
+2024-05-01,Tag der Arbeit,Labour Day,DE,False,True,,Public,
+2024-05-09,Christi Himmelfahrt,Ascension Day,DE,False,True,,Public,
+2024-05-19,Pfingstsonntag,Pentecost,DE,False,False,,Public,"DE-BB,DE-HE"
+2024-05-20,Pfingstmontag,Whit Monday,DE,False,True,,Public,
+2024-05-30,Fronleichnam,Corpus Christi,DE,False,False,,Public,"DE-BW,DE-BY,DE-HE,DE-NW,DE-RP,DE-SL"
+2024-08-15,Mariä Himmelfahrt,Assumption Day,DE,False,False,,Public,DE-SL
+2024-09-20,Weltkindertag,World Children's Day,DE,False,False,,Public,DE-TH
+2024-10-03,Tag der Deutschen Einheit,German Unity Day,DE,False,True,,Public,
+2024-10-31,Reformationstag,Reformation Day,DE,False,False,,Public,"DE-BB,DE-MV,DE-SN,DE-ST,DE-TH,DE-HB,DE-HH,DE-NI,DE-SH"
+2024-11-01,Allerheiligen,All Saints' Day,DE,False,False,,Public,"DE-BW,DE-BY,DE-NW,DE-RP,DE-SL"
+2024-11-20,Buß- und Bettag,Repentance and Prayer Day,DE,False,False,,Public,DE-SN
+2024-12-25,Erster Weihnachtstag,Christmas Day,DE,False,True,,Public,
+2024-12-26,Zweiter Weihnachtstag,St. Stephen's Day,DE,False,True,,Public,

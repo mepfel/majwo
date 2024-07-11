@@ -18,7 +18,7 @@ length <- 365
 model <- model |>
     filter((year(ds) == 2023) | (year(ds) == 2024))
 
-
+# Daten mit übergeben!!!
 getCRPS_A <- function(d) {
     # Parameter: d day to predict
     print(d)
