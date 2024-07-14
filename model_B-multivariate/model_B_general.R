@@ -105,7 +105,7 @@ getCRPS_B <- function(d) {
 
     # Get the next 24 hours after the testing period
     # Hier nur Testing data vom Model!!!
-    df_test <- model[((d + length - 1) * 24):((d + length) * 24 - 1), ]
+    df_test <- model(((d + 365 - 1) * 24) + 1):((d + 365) * 24), ]
 
     predict_point <- df_test[, "yhat"]
 
