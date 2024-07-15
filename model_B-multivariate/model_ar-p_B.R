@@ -45,7 +45,7 @@ x_train <- as.matrix(cbind(weekday_dummies, df_train$is_holiday))
 colnames(x_train) <- c(paste("weekday", 2:7, sep = "_"), "is_holiday")
 
 # Auto ARIMA
-arima1 <- auto.arima(df_train$load, xreg = x_train)
+arima1 <- auto.arima(df_train$load, xreg = x_train, seasonal = TRUE)
 arima1
 
 data <- as.tibble(df_train)
