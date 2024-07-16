@@ -34,7 +34,7 @@ sum(df_train$is_holiday)
 # ------- TRAINING ---------
 
 # AR-1
-AR1 <- dynlm(ts(df_train$load) ~ L(ts(df_train$load)) + df_train$weekday_int + df_train$is_holiday)
+AR1 <- lm(load ~ lag(load, 1) + weekday_int + is_holiday, data = df_train)
 summary(AR1)
 
 coef(AR1)

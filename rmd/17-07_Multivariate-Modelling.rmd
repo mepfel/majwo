@@ -1,0 +1,495 @@
+---
+title: "Multivariate and Univariate Modelling Improvements"
+author: "JW"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+## Updates
+- Punkt 1
+
+
+## Load the data and packages
+```{r message=FALSE}
+library(tidyverse)
+library(scoringRules)
+library(ggplot2)
+library(forecast)
+library(dynlm)
+library(plotly)
+
+# For the holidays
+holidays <- read.csv("../data/holidays_DE_15-24.csv") |>
+    mutate_at("Date", as.Date)
+
+# --- Load the energy data ----
+energy_load <- read.csv("../data/load_15-24.csv") |>
+    mutate_at(c("hour_int", "weekday_int", "month_int"), as.factor) |>
+    mutate(is_holiday = if_else(as.Date(date) %in% holidays$Date, 1, 0))
+
+energy_load$date <- as.POSIXct(energy_load$date, tz = "UTC")
+
+# --- Getting the peaks ---
+peaks <- energy_load |>
+    group_by(as.Date(date)) |>
+    slice(which.max(load))
+```
+
+We consider the year 2015 for training for 365 days and then predicting onwards...
+
+## General Model Approach A - Univariate
+### Model 1: AR1
+```{r}
+predict_ar1 <- function(data, d) {
+    # INPUT:
+    # data
+    # d ...  day
+
+    # length of the training period is 365 by default
+    # Generate lag 1
+    data$load_lag_1 <- lag(data$load, 1)
+    data <- na.omit(data)
+    # Train/Test Split
+
+    train <- data[d:(364 + d), ]
+    test <- data[(365 + d), ]
+
+    # ------- TRAINING ----------
+
+    # AR1
+    model <- lm(load ~ load_lag_1 + weekday_int + is_holiday, data = train)
+
+    # --------- TESTING ------------
+    yhat_test <- as.numeric(predict(model, newdata = test))
+
+    test$y_hat <- yhat_test
+    return(test)
+}
+```
+
+```{r}
+# Run the predictons for some days
+predictions <- data.frame(matrix(ncol = 9, nrow = 0))
+for (i in 1:150) {
+    value <- predict_ar1(peaks, i)
+    predictions <- rbind(predictions, value)
+}
+```
+
+```{r}
+# Reshape the dataframe to long format
+predictions_long <- pivot_longer(predictions, cols = c(load, y_hat), names_to = "type", values_to = "value")
+
+# Plot
+fig <- ggplot(predictions_long, aes(x = date, y = value, color = type)) +
+    geom_line() + # Draw lines
+    labs(x = "Date", y = "Value", title = "Load and Predicted Load Over Time - AR1") +
+    theme_minimal() # Use a minimal theme for aesthetics
+
+ggplotly(fig)
+```
+
+```{r}
+resids <- predictions$load - predictions$y_hat
+
+hist(resids, main = "Histogram of Residuals", xlab = "Residuals - AR1")
+```
+
+### Model 2: ARIMA(0,1,2)
+```{r}
+predict_arima <- function(data, d) {
+    # INPUT:
+    # data
+    # d ...  day
+
+    # length of the training period is 365 by default
+
+    # Train/Test Split
+    train <- data[d:(364 + d), ]
+    test <- data[(365 + d), ]
+    weekday_dummies <- model.matrix(~ factor(weekday_int), data = data)[, -1]
+
+    # ------- TRAINING ----------
+    # Set up the X matrix for training
+    x_train <- as.matrix(cbind(weekday_dummies[d:(364 + d), ], train$is_holiday))
+    # Set column names, assuming the first columns are from weekday_dummies_test and the last is is_holiday
+    colnames(x_train) <- c(paste("weekday", 2:7, sep = "_"), "is_holiday")
+
+    # ARIMA
+    model <- arima(train$load, c(0, 1, 2), xreg = x_train)
+
+    # --------- TESTING ------------
+    x_test <- as.matrix(c(weekday_dummies[(365 + d), ], test$is_holiday))
+    # Set column names, assuming the first columns are from weekday_dummies_test and the last is is_holiday
+    rownames(x_test) <- c(paste("weekday", 2:7, sep = "_"), "is_holiday")
+    yhat_test <- as.numeric(predict(model, n.ahead = 1, newxreg = t(x_test))$pred)
+
+    test$y_hat <- yhat_test
+    return(test)
+}
+```
+
+```{r}
+# Run the predictons for some days
+predictions <- data.frame(matrix(ncol = 9, nrow = 0))
+for (i in 1:150) {
+    value <- predict_arima(peaks, i)
+    predictions <- rbind(predictions, value)
+}
+```
+
+```{r}
+# Reshape the dataframe to long format
+predictions_long <- pivot_longer(predictions, cols = c(load, y_hat), names_to = "type", values_to = "value")
+
+# Plot
+fig <- ggplot(predictions_long, aes(x = date, y = value, color = type)) +
+    geom_line() + # Draw lines
+    labs(x = "Date", y = "Value", title = "Load and Predicted Load Over Time - ARIMA(0,1,2)") +
+    theme_minimal() # Use a minimal theme for aesthetics
+
+ggplotly(fig)
+```
+
+```{r}
+resids <- predictions$load - predictions$y_hat
+
+hist(resids, main = "Histogram of Residuals", xlab = "Residuals - ARIMA(0,1,2)")
+```
+
+### Model 3: NeuralProphet
+*Already implemented and working well...*
+
+
+## General Model Approach B - Multivariate
+### Model 1: AR24
+
+```{r}
+predict_ar24 <- function(data, d) {
+    # INPUT:
+    # data
+    # d ...  day
+
+    # length of the training period is 365 by default
+
+    # --------- Data Preprocessing -----------
+    # Create lagged variables for the model
+    data <- data |>
+        mutate(
+            Y_1_h = lag(load, 1),
+            Y_2_h = lag(load, 2),
+            Y_3_h = lag(load, 3),
+            Y_4_h = lag(load, 4),
+            Y_5_h = lag(load, 5),
+            Y_6_h = lag(load, 6),
+            Y_7_h = lag(load, 7),
+            Y_8_h = lag(load, 8),
+            Y_9_h = lag(load, 9),
+            Y_10_h = lag(load, 10),
+            Y_11_h = lag(load, 11),
+            Y_12_h = lag(load, 12),
+            Y_13_h = lag(load, 13),
+            Y_14_h = lag(load, 14),
+            Y_15_h = lag(load, 15),
+            Y_16_h = lag(load, 16),
+            Y_17_h = lag(load, 17),
+            Y_18_h = lag(load, 18),
+            Y_19_h = lag(load, 19),
+            Y_20_h = lag(load, 20),
+            Y_21_h = lag(load, 21),
+            Y_22_h = lag(load, 22),
+            Y_23_h = lag(load, 23),
+            Y_24_h = lag(load, 24)
+        )
+
+    # Create weekday dummy variables
+    weekday_dummies <- model.matrix(~ factor(weekday_int), data = data)[, -1]
+
+    for (i in 2:7) {
+        data[[paste0("DoW_", i)]] <- weekday_dummies[, i - 1]
+    }
+
+    # Remove rows with NA values created by lagging
+    data <- na.omit(data)
+
+    # ------- TRAINING ----------
+    # Formula for the regression
+    formula <- load ~ Y_1_h + Y_2_h + Y_3_h + Y_4_h + Y_5_h + Y_6_h +
+        Y_7_h + Y_8_h + Y_9_h + Y_10_h + Y_11_h + Y_12_h +
+        Y_13_h + Y_14_h + Y_15_h + Y_16_h + Y_17_h + Y_18_h +
+        Y_19_h + Y_20_h + Y_21_h + Y_22_h + Y_23_h + Y_24_h +
+        DoW_2 + DoW_3 + DoW_4 + DoW_5 + DoW_6 + DoW_7 + is_holiday
+
+    # Fit the regression model
+    # Use One year for training
+    train <- data[(24 * d - 23):(((364 + d) * 24)), ]
+    model <- lm(formula, data = train)
+
+    # --------- TESTING ------------
+    # getting the next hour of data
+    test <- data[(24 * d + 365 * 24 - 23):(24 * d + 365 * 24 - 23), ]
+
+    predictions <- numeric(24)
+    for (i in 1:24) {
+        predictions[i] <- as.numeric(predict(model, newdata = test))
+
+        # Shift Y_1_h to Y_24_h one position to the right and insert the new prediction at Y_1_h
+        test <- test %>%
+            mutate(
+                Y_24_h = Y_23_h,
+                Y_23_h = Y_22_h,
+                Y_22_h = Y_21_h,
+                Y_21_h = Y_20_h,
+                Y_20_h = Y_19_h,
+                Y_19_h = Y_18_h,
+                Y_18_h = Y_17_h,
+                Y_17_h = Y_16_h,
+                Y_16_h = Y_15_h,
+                Y_15_h = Y_14_h,
+                Y_14_h = Y_13_h,
+                Y_13_h = Y_12_h,
+                Y_12_h = Y_11_h,
+                Y_11_h = Y_10_h,
+                Y_10_h = Y_9_h,
+                Y_9_h = Y_8_h,
+                Y_8_h = Y_7_h,
+                Y_7_h = Y_6_h,
+                Y_6_h = Y_5_h,
+                Y_5_h = Y_4_h,
+                Y_4_h = Y_3_h,
+                Y_3_h = Y_2_h,
+                Y_2_h = Y_1_h,
+                Y_1_h = predictions[i]
+            )
+    }
+    data_test <- data[(24 * d + 365 * 24 - 23):(24 * d + 365 * 24), ]
+    data_test$y_hat <- predictions
+    return(data_test)
+}
+```
+
+```{r}
+# Run the predictons for some days
+predictions <- data.frame(matrix(ncol = 38, nrow = 0))
+for (i in 1:21) {
+    value <- predict_ar24(energy_load, i)
+    predictions <- rbind(predictions, value)
+}
+```
+
+```{r}
+# Reshape the dataframe to long format
+predictions_long <- pivot_longer(predictions, cols = c(load, y_hat), names_to = "type", values_to = "value")
+
+# Plot
+fig <- ggplot(predictions_long, aes(x = date, y = value, color = type)) +
+    geom_line() + # Draw lines
+    labs(x = "Date", y = "Value", title = "Load and Predicted Load Over Time - ARIMA(0,1,2)") +
+    theme_minimal() # Use a minimal theme for aesthetics
+ggplotly(fig)
+```
+
+```{r}
+resids <- predictions$load - predictions$y_hat
+
+hist(resids, main = "Histogram of Residuals", xlab = "Residuals - AR24")
+```
+
+### Model 2: ARIMA-Fourier
+
+```{r eval=FALSE}
+train <- msts(data[1:(365 * 24), ]$load, seasonal.period = c(24, 7 * 24))
+
+# ------- Fourier Model -----
+z <- fourier(train, K = c(5, 5))
+holidays <- data[1:(365 * 24), ]$is_holiday
+x_train <- cbind(z, holidays)
+
+# Time duration to fit: 102 sec.
+fit <- auto.arima(train, seasonal = FALSE, xreg = cbind(z, holidays))
+
+zf <- fourier(train, K = c(5, 5), h = 24)
+holidaysf <- data[((365 * 24) + 1):((365 * 24) + 24), ]$is_holiday
+
+predictions <- as.numeric(predict(fit, newxreg = cbind(zf, holidaysf))$pred)
+
+# Assuming 'date' is the vector of dates corresponding to your test data
+# Create a new data frame for plotting
+plot_data <- data.frame(date = data[((365 * 24) + 1):((365 * 24) + 24), ]$date, Actual = data[((365 * 24) + 1):((365 * 24) + 24), ]$load, Predicted = predictions)
+
+# Melt the data frame for easier plotting with ggplot
+plot_data_long <- reshape2::melt(plot_data, id.vars = "date")
+
+# Plot
+ggplot(plot_data_long, aes(x = date, y = value, color = variable)) +
+    geom_line() +
+    labs(title = "Actual vs Predicted Load", y = "Load", x = "Date") +
+    theme_minimal() +
+    scale_color_manual(values = c("Actual" = "red", "Predicted" = "blue"))
+```
+
+### Model 3: ARIMA
+```{r}
+predict_arima <- function(data, d) {
+    # INPUT:
+    # data
+    # d ...  day
+
+    # length of the training period is 365 days by default
+
+    # Train/Test Split
+    # Take 365 days from day d on - Remeber we have 24 hours = 1 day
+    train <- data[(24 * d - 23):(((364 + d) * 24)), ]
+    # Get the next 24 hours after the testing period
+    test <- data[(24 * d + 365 * 24 - 23):(24 * d + 365 * 24), ]
+
+    weekday_dummies <- model.matrix(~ factor(weekday_int), data = data)[, -1]
+
+    # ------- TRAINING ----------
+    # Set up the X matrix for training
+    x_train <- as.matrix(cbind(weekday_dummies[(24 * d - 23):(((364 + d) * 24)), ], train$is_holiday))
+    # Set column names, assuming the first columns are from weekday_dummies_test and the last is is_holiday
+    colnames(x_train) <- c(paste("weekday", 2:7, sep = "_"), "is_holiday")
+
+    # ARIMA - CHANGE MODEL here
+    model <- arima(train$load, c(3, 1, 3), xreg = x_train)
+
+
+    # --------- TESTING ------------
+    x_test <- as.matrix(cbind(weekday_dummies[(24 * d + 365 * 24 - 23):(24 * d + 365 * 24), ], test$is_holiday))
+    # Set column names, assuming the first columns are from weekday_dummies_test and the last is is_holiday
+    colnames(x_test) <- c(paste("weekday", 2:7, sep = "_"), "is_holiday")
+
+    # Predict new values with MODEL
+    yhat_test <- as.numeric(predict(model, n.ahead = 24, newxreg = x_test)$pred)
+
+    test$y_hat <- yhat_test
+    return(test)
+}
+```
+
+```{r}
+# Run the predictons for some days
+predictions <- data.frame(matrix(ncol = 9, nrow = 0))
+for (i in 1:14) {
+    print(i)
+    value <- predict_arima(energy_load, i)
+    predictions <- rbind(predictions, value)
+}
+```
+```{r}
+# Reshape the dataframe to long format
+predictions_long <- pivot_longer(predictions, cols = c(load, y_hat), names_to = "type", values_to = "value")
+
+# Plot
+fig <- ggplot(predictions_long, aes(x = date, y = value, color = type)) +
+    geom_line() + # Draw lines
+    labs(x = "Date", y = "Value", title = "Load and Predicted Load Over Time - ARIMA(3,1,3)") +
+    theme_minimal() # Use a minimal theme for aesthetics
+fig
+
+resids <- predictions$load - predictions$y_hat
+
+hist(resids, main = "Histogram of Residuals", xlab = "Residuals ARIMA")
+```
+
+### Model 4: Expert Model
+```{r}
+predict_ar24 <- function(data, d) {
+    # INPUT:
+    # data
+    # d ...  day
+
+    # length of the training period is 365 by default
+
+    # --------- Data Preprocessing -----------
+    # Create lagged variables for the model
+    data <- data |>
+        mutate(
+            Y_d_1_h = lag(load, 1 * 24), # lag by 24 hours
+            Y_d_2_h = lag(load, 2 * 24), # lag by 48 hours
+            Y_d_7_h = lag(load, 7 * 24), # lag by 168 hours (1 week)
+            Y_d_1_min = sapply(1:n(), function(i) ifelse(i > 24, min(load[(i - 24):(i - 1)]), NA)),
+            Y_d_1_max = sapply(1:n(), function(i) ifelse(i > 24, max(load[(i - 24):(i - 1)]), NA)),
+            Y_d_1_24 = lag(load, 1)
+        )
+
+    # Create weekday dummy variables
+    weekday_dummies <- model.matrix(~ factor(weekday_int), data = data)[, -1]
+
+    for (i in 2:7) {
+        data[[paste0("DoW_", i)]] <- weekday_dummies[, i - 1]
+    }
+
+    # Remove rows with NA values created by lagging
+    data <- na.omit(data)
+
+    # ------- TRAINING ----------
+    # Formula for the regression
+    formula <- load ~ Y_d_1_h + Y_d_2_h + Y_d_7_h + Y_d_1_min + Y_d_1_max + Y_d_1_24 +
+        DoW_2 + DoW_3 + DoW_4 + DoW_5 + DoW_6 + DoW_7
+
+    # Fit the regression model
+    # Use One year for training
+    train <- data[(24 * d - 23):(((364 + d) * 24)), ]
+    model <- lm(formula, data = train)
+
+    # --------- TESTING ------------
+    # getting the next 24 hours of data
+    test <- data[(24 * d + 365 * 24 - 23):(24 * d + 365 * 24), ]
+    predictions <- numeric(24)
+    for (i in 1:24) {
+        predictions[i] <- as.numeric(predict(model, newdata = test[i, ]))
+        # Shift Y_d_1_24 to Y_predicted
+        test[i + 1, ]$Y_d_1_24 <- predictions[i]
+    }
+    # Remove rows with NA values created by lagging
+    test <- na.omit(test)
+
+    test$y_hat <- predictions
+    return(test)
+}
+```
+
+```{r}
+# Run the predictons for some days
+predictions <- data.frame(matrix(ncol = 20, nrow = 0))
+for (i in 1:21) {
+    print(i)
+    value <- predict_ar24(energy_load, i)
+    predictions <- rbind(predictions, value)
+}
+```
+
+```{r}
+# Reshape the dataframe to long format
+predictions_long <- pivot_longer(predictions, cols = c(load, y_hat), names_to = "type", values_to = "value")
+
+# Plot
+fig <- ggplot(predictions_long, aes(x = date, y = value, color = type)) +
+    geom_line() + # Draw lines
+    labs(x = "Date", y = "Value", title = "Load and Predicted Load Over Time - Expert Model") +
+    theme_minimal() # Use a minimal theme for aesthetics
+ggplotly(fig)
+
+resids <- predictions$load - predictions$y_hat
+
+hist(resids, main = "Histogram of Residuals", xlab = "Residuals Expert Model")
+```
+
+### Model 5: TBATS
+
+```{r}
+# Take approx 2 weeks for training
+demand <- msts(energy_load[8424:8760, ]$load, seasonal.period = c(24, 7 * 24))
+
+# ---- TBATS ----
+fit <- tbats(demand)
+checkresiduals(fit)
+plot(forecast(fit, h = 24))
+
+# predictions <- as.numeric(forecast(fit, h = 24)$mean)
+```
+
+### Model 6: NeuralProphet
+*Already implemented and working well...*

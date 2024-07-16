@@ -10,19 +10,13 @@ holidays <- read.csv("./data/holidays_DE_15-24.csv") |>
     mutate_at("Date", as.Date)
 
 # --- Load the energy data ----
-energy_load <- read.csv("./data/load_22-24.csv") |>
+energy_load <- read.csv("./data/load_15-24.csv") |>
     mutate_at(c("hour_int", "weekday_int", "month_int"), as.factor) |>
-    mutate(is_holiday = if_else(as.Date(date) %in% holidays$Date, 1, 0))
+    mutate(is_holiday = if_else(as.Date(date) %in% holidays$Date, 1, 0)) |>
+    filter(year(date) >= 2022)
+
 
 energy_load$date <- as.POSIXct(energy_load$date, tz = "UTC")
-
-
-# --- Getting the peaks ---
-peaks <- energy_load |>
-    group_by(as.Date(date)) |>
-    slice(which.max(load))
-
-
 
 predict_arma <- function(data, d) {
     # INPUT:
@@ -64,7 +58,7 @@ predict_arma <- function(data, d) {
 
 # Run the predictons for some days
 predictions <- data.frame(matrix(ncol = 9, nrow = 0))
-for (i in 1:2) {
+for (i in 1:1) {
     print(i)
     value <- predict_arma(energy_load, i)
     predictions <- rbind(predictions, value)
