@@ -39,12 +39,23 @@ for (i in 2:7) {
     data[[paste0("DoW_", i)]] <- weekday_dummies[, i - 1]
 }
 
+# Create hour dummy variables
+hour_dummies <- model.matrix(~ factor(hour_int), data = data)[, -1]
+
+# Add hour dummy variables to data
+for (i in 1:ncol(hour_dummies)) {
+    data[[paste0("Hour_", i)]] <- hour_dummies[, i]
+}
+
+
 # Remove rows with NA values created by lagging
 data <- na.omit(data)
 
 # Formula for the regression
 formula <- load ~ Y_d_1_h + Y_d_2_h + Y_d_7_h + Y_d_1_min + Y_d_1_max + Y_d_1_24 +
-    DoW_2 + DoW_3 + DoW_4 + DoW_5 + DoW_6 + DoW_7
+    DoW_2 + DoW_3 + DoW_4 + DoW_5 + DoW_6 + DoW_7 + Hour_1 + Hour_2 + Hour_3 + Hour_4 + Hour_5 + Hour_6 + Hour_7 + Hour_8 +
+    Hour_9 + Hour_10 + Hour_11 + Hour_12 + Hour_13 + Hour_14 + Hour_15 +
+    Hour_16 + Hour_17 + Hour_18 + Hour_19 + Hour_20 + Hour_21 + Hour_22 + Hour_23
 
 # Fit the regression model
 # Use One year for training
@@ -61,7 +72,7 @@ coeftest(model, vcov = vcovHC(model, type = "HC1"))
 # ---- Check for huge errors ---
 train$resids <- as.numeric(model$residuals)
 huge_errors <- train |>
-    filter(abs(resids) > 7500)
+    filter(abs(resids) > 400)
 
 
 # ------ TESTING ------

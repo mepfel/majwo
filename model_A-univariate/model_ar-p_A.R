@@ -53,7 +53,7 @@ arima1 <- auto.arima(ts(df_train$load), xreg = x_train)
 arima1
 
 # ARIMA
-model <- arima(df_train$load, c(1, 1, 1), xreg = x_train)
+model <- arima(df_train$load, c(3, 1, 1), xreg = x_train)
 
 summary(model)
 

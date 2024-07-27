@@ -57,6 +57,14 @@ for (i in 2:7) {
     data[[paste0("DoW_", i)]] <- weekday_dummies[, i - 1]
 }
 
+# Create hour dummy variables
+hour_dummies <- model.matrix(~ factor(hour_int), data = data)[, -1]
+
+# Add hour dummy variables to data
+for (i in 1:ncol(hour_dummies)) {
+    data[[paste0("Hour_", i)]] <- hour_dummies[, i]
+}
+
 # Remove rows with NA values created by lagging
 data <- na.omit(data)
 
@@ -65,7 +73,10 @@ formula <- load ~ Y_1_h + Y_2_h + Y_3_h + Y_4_h + Y_5_h + Y_6_h +
     Y_7_h + Y_8_h + Y_9_h + Y_10_h + Y_11_h + Y_12_h +
     Y_13_h + Y_14_h + Y_15_h + Y_16_h + Y_17_h + Y_18_h +
     Y_19_h + Y_20_h + Y_21_h + Y_22_h + Y_23_h + Y_24_h +
-    DoW_2 + DoW_3 + DoW_4 + DoW_5 + DoW_6 + DoW_7 + is_holiday
+    DoW_2 + DoW_3 + DoW_4 + DoW_5 + DoW_6 + DoW_7 + is_holiday +
+    Hour_1 + Hour_2 + Hour_3 + Hour_4 + Hour_5 + Hour_6 + Hour_7 + Hour_8 +
+    Hour_9 + Hour_10 + Hour_11 + Hour_12 + Hour_13 + Hour_14 + Hour_15 +
+    Hour_16 + Hour_17 + Hour_18 + Hour_19 + Hour_20 + Hour_21 + Hour_22 + Hour_23
 
 # Fit the regression model
 # Use One year for training
@@ -79,7 +90,7 @@ checkresiduals(model)
 
 train$resids <- as.numeric(model$residuals)
 huge_errors <- train |>
-    filter(abs(resids) > 4000)
+    filter(abs(resids) > 2000)
 
 # ------ TESTING ------
 # getting the next hour of data
