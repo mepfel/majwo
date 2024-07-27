@@ -2,7 +2,6 @@ library(tidyverse)
 library(scoringRules)
 library(ggplot2)
 library(forecast)
-library(dynlm)
 
 # For the holidays
 holidays <- read.csv("./data/holidays_DE_15-24.csv") |>
@@ -58,6 +57,11 @@ summary(model)
 checkresiduals(model)
 # If you want to use robust standard errors
 coeftest(model, vcov = vcovHC(model, type = "HC1"))
+
+# ---- Check for huge errors ---
+train$resids <- as.numeric(model$residuals)
+huge_errors <- train |>
+    filter(abs(resids) > 7500)
 
 
 # ------ TESTING ------

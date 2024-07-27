@@ -77,6 +77,10 @@ summary(model)
 
 checkresiduals(model)
 
+train$resids <- as.numeric(model$residuals)
+huge_errors <- train |>
+    filter(abs(resids) > 4000)
+
 # ------ TESTING ------
 # getting the next hour of data
 test <- data[((365 * 24) + 1):((365 * 24) + 1), ]
