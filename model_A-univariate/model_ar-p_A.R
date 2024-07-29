@@ -20,21 +20,34 @@ energy_load$date <- as.POSIXct(energy_load$date, tz = "UTC")
 # --- Getting the peaks ---
 peaks <- energy_load |>
     group_by(as.Date(date)) |>
-    slice(which.max(load))
+    slice(which.max(load)) |>
+    as.data.frame()
 
-# Train/Test Split
-# Taking the years 2019 to 2023 for training
-df_train <- peaks |>
-    filter(year(date) %in% c(2023, 2022, 2021, 2020, 2019))
-df_test <- peaks |>
-    filter(year(date) == 2024)
+data <- peaks |>
+    filter(year(date) >= 2022)
 
-sum(df_train$is_holiday)
+# Log Transformation
+data <- data |>
+    mutate(
+        load_origin = load,
+        load = log(load)
+    )
+
+# Create weekday dummy variables
+weekday_dummies <- model.matrix(~ factor(weekday_int) - 1, data = data)
+
+for (i in 1:7) {
+    data[[paste0("DoW_", i)]] <- weekday_dummies[, i]
+}
+
 
 # ------- TRAINING ---------
+# Train/Test Split
+# Use One year for training
+train <- data[1:365, ]
 
 # AR-1
-AR1 <- lm(load ~ lag(load, 1) + weekday_int + is_holiday, data = df_train)
+AR1 <- lm(load ~ lag(load, 1) + weekday_int + is_holiday, data = train)
 summary(AR1)
 
 coef(AR1)
@@ -43,39 +56,33 @@ checkresiduals(AR1)
 pacf(AR1$residuals)
 AIC(AR1)
 
-weekday_dummies <- model.matrix(~ factor(weekday_int), data = df_train)[, -1]
-x_train <- as.matrix(cbind(weekday_dummies, df_train$is_holiday))
-# Set column names, assuming the first columns are from weekday_dummies_test and the last is is_holiday
-colnames(x_train) <- c(paste("weekday", 2:7, sep = "_"), "is_holiday")
+x_train <- c("is_holiday", "DoW_2", "DoW_3", "DoW_4", "DoW_5", "DoW_6", "DoW_7")
+x_reg <- train |>
+    select(all_of(x_train)) |>
+    as.matrix()
 
 # Auto ARIMA
-arima1 <- auto.arima(ts(df_train$load), xreg = x_train)
+arima1 <- auto.arima(train$load, xreg = x_reg)
 arima1
 
 # ARIMA
-model <- arima(df_train$load, c(3, 1, 1), xreg = x_train)
+model <- arima(train$load, c(1, 1, 1), xreg = x_reg)
 
 summary(model)
 
 checkresiduals(model)
 
-df_train$resids <- as.numeric(model$residuals)
-
-# Check for the huge errors
-huge_errors <- df_train |>
-    filter(abs(resids) > 7500)
+train$resids <- as.numeric(model$residuals)
 
 
 # --------- TESTING ------------
+n <- 7
+test <- data[(365 + 1):(365 + n), ]
+x_reg_new <- test |>
+    select(all_of(x_train)) |>
+    as.matrix()
 
-weekday_dummies_test <- model.matrix(~ factor(weekday_int), data = df_test)[, -1]
-
-x_test <- as.matrix(cbind(weekday_dummies_test, df_test$is_holiday))
-# Set column names, assuming the first columns are from weekday_dummies_test and the last is is_holiday
-colnames(x_test) <- c(paste("weekday", 2:7, sep = "_"), "is_holiday")
-
-n <- 62
-yhat_test <- as.numeric(predict(model, n.ahead = n, newxreg = x_test[1:n, ])$pred)
+yhat_test <- as.numeric(predict(model, n.ahead = n, newxreg = x_reg_new)$pred)
 
 # Plot
 
@@ -83,14 +90,10 @@ yhat_test <- as.numeric(predict(model, n.ahead = n, newxreg = x_test[1:n, ])$pre
 # and df_test has at least n rows
 plot_data <- data.frame(
     time = 1:n,
-    Actual = df_test$load[1:n],
+    Actual = test$load,
     Predicted = yhat_test
 )
 
-
-
-
-yhat_train <- as.numeric(fitted(model))
 
 data <- data.frame(matrix(ncol = 0, nrow = nrow(df_train) + n))
 

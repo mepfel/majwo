@@ -20,42 +20,57 @@ energy_load$date <- as.POSIXct(energy_load$date, tz = "UTC")
 # --- Getting the peaks ---
 peaks <- energy_load |>
     group_by(as.Date(date)) |>
-    slice(which.max(load))
+    slice(which.max(load)) |>
+    as.data.frame()
 
 predict_arma <- function(data, d) {
     # INPUT:
     # data
-    # d ...  day
+    # d ...  day (has to be bigger than 0)
 
     # length of the training period is 365 by default
+    #### Data Manipulation
+    # Log Transformation
+    data <- data |>
+        mutate(
+            load_origin = load,
+            load = log(load)
+        )
+    # Create weekday dummy variables
+    weekday_dummies <- model.matrix(~ factor(weekday_int) - 1, data = data)
+    for (i in 1:7) {
+        data[[paste0("DoW_", i)]] <- weekday_dummies[, i]
+    }
 
     # Train/Test Split
     train <- data[d:(364 + d), ]
     test <- data[(365 + d), ]
-    weekday_dummies <- model.matrix(~ factor(weekday_int), data = data)[, -1]
 
     # ------- TRAINING ----------
     # Set up the X matrix for training
-    x_train <- as.matrix(cbind(weekday_dummies[d:(364 + d), ], train$is_holiday))
-    # Set column names, assuming the first columns are from weekday_dummies_test and the last is is_holiday
-    colnames(x_train) <- c(paste("weekday", 2:7, sep = "_"), "is_holiday")
+    x_train <- c("is_holiday", "DoW_2", "DoW_3", "DoW_4", "DoW_5", "DoW_6", "DoW_7")
+    x_reg <- train |>
+        select(all_of(x_train)) |>
+        as.matrix()
 
     # ARIMA
-    model <- arima(train$load, c(1, 1, 1), xreg = x_train)
+    model <- arima(train$load, c(1, 1, 1), xreg = x_reg)
 
     # --------- TESTING ------------
-    x_test <- as.matrix(c(weekday_dummies[(365 + d), ], test$is_holiday))
-    # Set column names, assuming the first columns are from weekday_dummies_test and the last is is_holiday
-    rownames(x_test) <- c(paste("weekday", 2:7, sep = "_"), "is_holiday")
-    yhat_test <- as.numeric(predict(model, n.ahead = 1, newxreg = t(x_test))$pred)
+    # New test data
+    x_reg_new <- test |>
+        select(all_of(x_train)) |>
+        as.matrix()
 
-    test$y_hat <- yhat_test
+    yhat_test <- as.numeric(predict(model, n.ahead = 1, newxreg = x_reg_new)$pred)
+
+    test$y_hat <- exp(yhat_test)
     return(test)
 }
 
 
 # Run the predictons for some days
-predictions <- data.frame(matrix(ncol = 9, nrow = 0))
+predictions <- data.frame(matrix(ncol = 17, nrow = 0))
 for (i in 1:365) {
     print(i)
     value <- predict_arma(peaks, i)
@@ -64,7 +79,7 @@ for (i in 1:365) {
 
 
 # Reshape the dataframe to long format
-predictions_long <- pivot_longer(predictions, cols = c(load, y_hat), names_to = "type", values_to = "value")
+predictions_long <- pivot_longer(predictions, cols = c(load_origin, y_hat), names_to = "type", values_to = "value")
 
 # Plot
 fig <- ggplot(predictions_long, aes(x = date, y = value, color = type)) +
@@ -74,6 +89,6 @@ fig <- ggplot(predictions_long, aes(x = date, y = value, color = type)) +
 
 ggplotly(fig)
 
-resids <- predictions$load - predictions$y_hat
+resids <- predictions$load_origin - predictions$y_hat
 
 hist(resids, main = "Histogram of Residuals", xlab = "Residuals")

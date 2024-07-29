@@ -14,7 +14,6 @@ energy_load <- read.csv("./data/load_15-24.csv") |>
 
 energy_load$date <- as.POSIXct(energy_load$date, tz = "UTC")
 
-
 # Train/Test Split
 # Taking the years 2023 for training
 data <- energy_load |>
