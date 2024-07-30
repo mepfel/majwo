@@ -20,6 +20,7 @@ data <- energy_load |>
     filter(year(date) >= 2022)
 
 # Log Transformation
+# Transformation is ON THE WRING PLACE!!
 data <- data |>
     group_by(hour_int) |>
     mutate(

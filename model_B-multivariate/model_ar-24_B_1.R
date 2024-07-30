@@ -1,8 +1,6 @@
 library(tidyverse)
-library(scoringRules)
 library(ggplot2)
 library(forecast)
-library(dynlm)
 
 # For the holidays
 holidays <- read.csv("./data/holidays_DE_15-24.csv") |>
@@ -51,13 +49,13 @@ data <- data |>
     )
 
 # Create weekday dummy variables
-weekday_dummies <- model.matrix(~ factor(weekday_int), data = data)[, -1]
+weekday_dummies <- model.matrix(~ factor(weekday_int) - 1, data = data)
 
-for (i in 2:7) {
-    data[[paste0("DoW_", i)]] <- weekday_dummies[, i - 1]
+for (i in 1:7) {
+    data[[paste0("DoW_", i)]] <- weekday_dummies[, i]
 }
 
-# Create hour dummy variables
+# Create hour dummy variables - NOT NEEDED -
 hour_dummies <- model.matrix(~ factor(hour_int), data = data)[, -1]
 
 # Add hour dummy variables to data
@@ -66,17 +64,15 @@ for (i in 1:ncol(hour_dummies)) {
 }
 
 # Remove rows with NA values created by lagging
-data <- na.omit(data)
+data <- na.omit(data) # Achtung!!! Bei Dokumentation genau auf Training und Test Split achten
 
+# ----------- Model ---------------
 # Formula for the regression
 formula <- load ~ Y_1_h + Y_2_h + Y_3_h + Y_4_h + Y_5_h + Y_6_h +
     Y_7_h + Y_8_h + Y_9_h + Y_10_h + Y_11_h + Y_12_h +
     Y_13_h + Y_14_h + Y_15_h + Y_16_h + Y_17_h + Y_18_h +
     Y_19_h + Y_20_h + Y_21_h + Y_22_h + Y_23_h + Y_24_h +
-    DoW_2 + DoW_3 + DoW_4 + DoW_5 + DoW_6 + DoW_7 + is_holiday +
-    Hour_1 + Hour_2 + Hour_3 + Hour_4 + Hour_5 + Hour_6 + Hour_7 + Hour_8 +
-    Hour_9 + Hour_10 + Hour_11 + Hour_12 + Hour_13 + Hour_14 + Hour_15 +
-    Hour_16 + Hour_17 + Hour_18 + Hour_19 + Hour_20 + Hour_21 + Hour_22 + Hour_23
+    DoW_2 + DoW_3 + DoW_4 + DoW_5 + DoW_6 + DoW_7 + is_holiday
 
 # Fit the regression model
 # Use One year for training
@@ -146,3 +142,115 @@ ggplot(plot_data_long, aes(x = date, y = value, color = variable)) +
     labs(title = "Actual vs Predicted Load", y = "Load", x = "Date") +
     theme_minimal() +
     scale_color_manual(values = c("Actual" = "red", "Predicted" = "blue"))
+
+
+
+# -------- TRAIN/TEST/PREDICT -------
+# "ds","y","yhat","residuals" are the columns for the final csv
+
+predict_ar24 <- function(data, d) {
+    # INPUT:
+    # data
+    # d ...  day
+
+    # ------- TRAINING ----------
+    # Formula for the regression
+    formula <- load ~ Y_1_h + Y_2_h + Y_3_h + Y_4_h + Y_5_h + Y_6_h +
+        Y_7_h + Y_8_h + Y_9_h + Y_10_h + Y_11_h + Y_12_h +
+        Y_13_h + Y_14_h + Y_15_h + Y_16_h + Y_17_h + Y_18_h +
+        Y_19_h + Y_20_h + Y_21_h + Y_22_h + Y_23_h + Y_24_h +
+        DoW_2 + DoW_3 + DoW_4 + DoW_5 + DoW_6 + DoW_7 + is_holiday
+
+    # Fit the regression model
+    # Use One year for training
+    train <- data[(24 * d - 23):(((364 + d) * 24)), ]
+
+
+    model <- lm(formula, data = train)
+
+    # --------- TESTING ------------
+    # getting the next hour of data
+    test <- data[(24 * d + 365 * 24 - 23):(24 * d + 365 * 24 - 23), ]
+
+    predictions <- numeric(24)
+    for (i in 1:24) {
+        predictions[i] <- as.numeric(predict(model, newdata = test))
+
+        # Shift Y_1_h to Y_24_h one position to the right and insert the new prediction at Y_1_h
+        test <- test %>%
+            mutate(
+                Y_24_h = Y_23_h,
+                Y_23_h = Y_22_h,
+                Y_22_h = Y_21_h,
+                Y_21_h = Y_20_h,
+                Y_20_h = Y_19_h,
+                Y_19_h = Y_18_h,
+                Y_18_h = Y_17_h,
+                Y_17_h = Y_16_h,
+                Y_16_h = Y_15_h,
+                Y_15_h = Y_14_h,
+                Y_14_h = Y_13_h,
+                Y_13_h = Y_12_h,
+                Y_12_h = Y_11_h,
+                Y_11_h = Y_10_h,
+                Y_10_h = Y_9_h,
+                Y_9_h = Y_8_h,
+                Y_8_h = Y_7_h,
+                Y_7_h = Y_6_h,
+                Y_6_h = Y_5_h,
+                Y_5_h = Y_4_h,
+                Y_4_h = Y_3_h,
+                Y_3_h = Y_2_h,
+                Y_2_h = Y_1_h,
+                Y_1_h = predictions[i]
+            )
+    }
+    data_test <- data[(24 * d + 365 * 24 - 23):(24 * d + 365 * 24), ]
+    data_test$y_hat <- predictions
+    return(data_test)
+}
+
+# Run the predictons for some days
+predictions <- data.frame(matrix(ncol = 62, nrow = 0))
+pred_length <- 470 # in days
+for (i in 1:pred_length) {
+    print(i)
+    value <- predict_ar24(data, i)
+    predictions <- rbind(predictions, value)
+}
+
+# ---------- Storing the data ------------
+store <- data.frame(matrix(ncol = 0, nrow = (pred_length * 24)))
+
+# Adjusting the 'data' dataframe
+store$ds <- predictions$date # Ensuring 'ds' is the first column
+
+# Actual values 'y'
+store$y <- predictions$load
+
+# Predicted values 'yhat'
+store$yhat <- predictions$y_hat
+
+# Calculating residuals for the training part
+store$residuals <- store$y - store$yhat
+
+write.csv(store, file = "./data/forecasts/loads_22-24_model-ar24.csv", row.names = FALSE)
+
+
+# -------------- Plotting ---------------
+# Reshape the dataframe to long format
+predictions_long <- pivot_longer(predictions, cols = c(load, y_hat), names_to = "type", values_to = "value")
+
+# Plot
+fig <- ggplot(predictions_long, aes(x = date, y = value, color = type)) +
+    geom_line() + # Draw lines
+    labs(x = "Date", y = "Value", title = "Load and Predicted Load Over Time - AR-24 with hourly Dummies") +
+    theme_minimal() # Use a minimal theme for aesthetics
+fig
+library(plotly)
+ggplotly(fig)
+
+
+resids <- predictions$load - predictions$y_hat
+
+hist(resids, main = "Histogram of Residuals", xlab = "Residuals - AR24")
