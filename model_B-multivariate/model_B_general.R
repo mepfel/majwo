@@ -1,6 +1,5 @@
 library(tidyverse)
 library(scoringRules)
-library(ggplot2)
 library(copula)
 # This is a first general implementation of version B
 
@@ -11,22 +10,20 @@ library(copula)
 # model$ds <- as.POSIXct(model$ds, tz = "UTC")
 
 # Here: Arma
-model <- read.csv("./data/forecasts/load_22-24_model-arma.csv")
+model <- read.csv("./data/forecasts/loads_22-24_model-expert.csv")
 model$ds <- as.POSIXct(model$ds, tz = "UTC")
 
 
 # specify the length for the error learning phase in days
 length <- 365
-# Filter only for the years 2023 (Training) and 2024 (Testing)
-model <- model |>
-    filter((year(ds) == 2023) | (year(ds) == 2024))
 
-getCRPS_B <- function(d) {
+# data als Parameter übergeben
+getCRPS_B <- function(d, data) {
     print(d)
     # --------- Error Learning Phase ---------
     # Getting the test data: starting from day i get the next 365 days
     # Achtung: Hier dürfen nur Training oder Testing data verwendet werden
-    df_train <- model[((d - 1) * 24 + 1):(((364 + d) * 24) - 1), ]
+    df_train <- data[((d - 1) * 24 + 1):(((364 + d) * 24) - 1), ]
 
     mu_sigma <- data.frame(hour = seq(0, 23), mu = rep(0, 24), sigma = rep(0, 24))
 
@@ -105,7 +102,7 @@ getCRPS_B <- function(d) {
 
     # Get the next 24 hours after the testing period
     # Hier nur Testing data vom Model!!!
-    df_test <- model(((d + 365 - 1) * 24) + 1):((d + 365) * 24), ]
+    df_test <- data[(((d + 365 - 1) * 24) + 1):((d + 365) * 24), ]
 
     predict_point <- df_test[, "yhat"]
 
@@ -133,19 +130,19 @@ getCRPS_B <- function(d) {
     # Extracting the peak from the test day
     peak <- max(df_test[, "y"])
 
-    hist(peaks_dis_B, main = "Histogram of Peaks Distribution B", xlab = "Peaks", breaks = "Sturges")
+    # hist(peaks_dis_B, main = "Histogram of Peaks Distribution B", xlab = "Peaks", breaks = "Sturges")
 
     return(crps_sample(peak, peaks_dis_B))
 }
 
 # specify the length for rolling iterations in days
-len_test <- 28
+len_test <- 100
 crps_scores <- list()
 for (d in seq(1, len_test)) {
-    crps_score <- getCRPS_B(d)
+    crps_score <- getCRPS_B(d, model)
     # Append the CRPS score to the list
     crps_scores[[d]] <- crps_score
 }
 
-print("Mean CRPS for 28 days in 2024")
+print("Mean CRPS for 100 days in 2024")
 print(mean(unlist(crps_scores)))

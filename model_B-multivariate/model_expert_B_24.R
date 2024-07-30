@@ -188,7 +188,7 @@ predict_expert <- function(data, d) {
 
 # Run the predictons for some days
 predictions <- data.frame(matrix(ncol = 15, nrow = 0))
-pred_length <- 31 # in days
+pred_length <- 471 # in days
 for (i in 1:pred_length) {
     print(i)
     value <- predict_expert(data, i)

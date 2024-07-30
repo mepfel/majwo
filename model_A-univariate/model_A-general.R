@@ -5,28 +5,26 @@ library(ggplot2)
 # Load the model data
 
 # Here: NeuralProphet
-model <- read.csv("./data/forecasts/peaks_22-24_model-neuralprophet.csv")
-model$ds <- as.POSIXct(model$ds, tz = "UTC")
+# model <- read.csv("./data/forecasts/peaks_22-24_model-neuralprophet.csv")
+# model$ds <- as.POSIXct(model$ds, tz = "UTC")
 
 # Here: Arma
-# model <- read.csv("./data/forecasts/peaks_22-24_model-arma.csv")
-# model$ds <- as.POSIXct(model$ds, tz = "UTC")
+model <- read.csv("./data/forecasts/peaks_22-24_model-arima(1,1,1).csv")
+model$ds <- as.POSIXct(model$ds, tz = "UTC")
 
 # specify the length for the error learning phase in days
 length <- 365
-# Filter only for the years 2023 (Training) and 2024 (Testing)
-model <- model |>
-    filter((year(ds) == 2023) | (year(ds) == 2024))
+
 
 # Daten mit übergeben!!!
-getCRPS_A <- function(d) {
+getCRPS_A <- function(d, data) {
     # Parameter: d day to predict
     print(d)
     # --------- Error Learning Phase ---------
 
     # Getting the test data: starting from day i get the next 365 days
     # Achtung: Hier dürfen nur Training oder Testing data verwendet werden
-    df_train <- model[d:(364 + d), ]
+    df_train <- data[d:(364 + d), ]
 
     # Standardize the residuals
     mu_resid <- mean(df_train$residuals)
@@ -57,7 +55,7 @@ getCRPS_A <- function(d) {
 
     # Get the next 24 hours after the testing period
     # Hier nur Testing data vom Model!!!
-    df_test <- model[(d + length), ]
+    df_test <- data[(d + length), ]
 
 
     for (i in quantiles) {
@@ -68,7 +66,7 @@ getCRPS_A <- function(d) {
     print("Prediction DONE...")
 
     # Histogram
-    hist(peaks_dis_A[, "values"], main = "Histogram of Peaks Distribution A", xlab = "Peaks", breaks = "Sturges")
+    # hist(peaks_dis_A[, "values"], main = "Histogram of Peaks Distribution A", xlab = "Peaks", breaks = "Sturges")
 
     # Extracting the peak from the test day
     peak <- df_test[, "y"]
@@ -78,13 +76,13 @@ getCRPS_A <- function(d) {
 }
 
 # specify the length for rolling iterations in days
-len_test <- 28
+len_test <- 100
 crps_scores <- list()
 for (d in seq(1, len_test)) {
-    crps_score <- getCRPS_A(d)
+    crps_score <- getCRPS_A(d, model)
     # Append the CRPS score to the list
     crps_scores[[d]] <- crps_score
 }
 
-print("Mean CRPS for 28 days in 2024")
+print("Mean CRPS for 100 days in 2024")
 print(mean(unlist(crps_scores)))

@@ -23,11 +23,15 @@ peaks <- energy_load |>
     slice(which.max(load)) |>
     as.data.frame()
 
+
+data <- peaks |>
+    filter(year(date) >= 2022)
+
 # Create weekday dummy variables
-weekday_dummies <- model.matrix(~ factor(weekday_int) - 1, data = peaks)
+weekday_dummies <- model.matrix(~ factor(weekday_int) - 1, data = data)
 
 for (i in 1:7) {
-    peaks[[paste0("DoW_", i)]] <- weekday_dummies[, i]
+    data[[paste0("DoW_", i)]] <- weekday_dummies[, i]
 }
 
 
@@ -75,10 +79,10 @@ predict_arma <- function(data, d) {
 
 # Run the predictons for some days
 predictions <- data.frame(matrix(ncol = 17, nrow = 0))
-pred_length <- 31 # in days
+pred_length <- 471 # in days
 for (i in 1:pred_length) {
     print(i)
-    value <- predict_arma(peaks, i)
+    value <- predict_arma(data, i)
     predictions <- rbind(predictions, value)
 }
 

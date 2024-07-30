@@ -170,10 +170,10 @@ predict_ar7 <- function(data, d) {
 
 # Run the predictons for some days
 predictions <- data.frame(matrix(ncol = 17, nrow = 0))
-pred_length <- 31 # in days
+pred_length <- 464 # in days
 for (i in 1:pred_length) {
     print(i)
-    value <- predict_ar7(peaks, i)
+    value <- predict_ar7(data, i)
     predictions <- rbind(predictions, value)
 }
 
