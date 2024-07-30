@@ -47,14 +47,14 @@ for (i in 1:7) {
 train <- data[1:365, ]
 
 # AR-1
-AR1 <- lm(load ~ lag(load, 1) + lag(load, 2) + lag(load, 3) + lag(load, 4) + lag(load, 5) + lag(load, 6) + lag(load, 7) + weekday_int + is_holiday, data = train)
-summary(AR1)
+AR7 <- lm(load ~ lag(load, 1) + lag(load, 2) + lag(load, 3) + lag(load, 4) + lag(load, 5) + lag(load, 6) + lag(load, 7) + weekday_int + is_holiday, data = train)
+summary(AR7)
 
-coef(AR1)
-checkresiduals(AR1)
+coef(AR7)
+checkresiduals(AR7)
 
-pacf(AR1$residuals)
-AIC(AR1)
+pacf(AR7$residuals)
+AIC(AR7)
 
 x_train <- c("is_holiday", "DoW_2", "DoW_3", "DoW_4", "DoW_5", "DoW_6", "DoW_7")
 x_reg <- train |>
@@ -170,7 +170,7 @@ predict_ar7 <- function(data, d) {
 
 # Run the predictons for some days
 predictions <- data.frame(matrix(ncol = 17, nrow = 0))
-pred_length <- 464 # in days
+pred_length <- 31 # in days
 for (i in 1:pred_length) {
     print(i)
     value <- predict_ar7(peaks, i)
@@ -202,9 +202,9 @@ predictions_long <- pivot_longer(predictions, cols = c(load_origin, y_hat), name
 # Plot
 fig <- ggplot(predictions_long, aes(x = date, y = value, color = type)) +
     geom_line() + # Draw lines
-    labs(x = "Date", y = "Value", title = "Load and Predicted Load Over Time") +
+    labs(x = "Date", y = "Value", title = "Load and Predicted Peak - AR7") +
     theme_minimal() # Use a minimal theme for aesthetics
-
+fig
 ggplotly(fig)
 
 resids <- predictions$load_origin - predictions$y_hat

@@ -63,7 +63,7 @@ for (i in seq(0, 23)) {
 # Print the summary of the model
 summary(model_1)
 
-checkresiduals(model_10)
+checkresiduals(model_13)
 # If you want to use robust standard errors
 coeftest(model, vcov = vcovHC(model, type = "HC1"))
 
@@ -151,8 +151,8 @@ predict_arima <- function(data, d) {
 
 # Run the predictons for some days
 predictions <- data.frame(matrix(ncol = 15, nrow = 0))
-pred_length <- 7 # in days
-for (i in 2:pred_length) {
+pred_length <- 471 # in days
+for (i in 1:pred_length) {
     print(i)
     value <- predict_arima(data, i)
     predictions <- rbind(predictions, value)
