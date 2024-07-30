@@ -188,7 +188,7 @@ predict_expert <- function(data, d) {
 
 # Run the predictons for some days
 predictions <- data.frame(matrix(ncol = 15, nrow = 0))
-pred_length <- 7 # in days
+pred_length <- 464 # in days
 for (i in 1:pred_length) {
     print(i)
     value <- predict_expert(data, i)
@@ -221,7 +221,7 @@ store$yhat <- predictions$y_hat
 # Calculating residuals for the training part
 store$residuals <- store$y - store$yhat
 
-write.csv(store, file = "./data/forecasts/loads_22-24_model-ar24.csv", row.names = FALSE)
+write.csv(store, file = "./data/forecasts/loads_22-24_model-expert.csv", row.names = FALSE)
 
 
 

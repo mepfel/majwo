@@ -23,6 +23,15 @@ peaks <- energy_load |>
     slice(which.max(load)) |>
     as.data.frame()
 
+# Create weekday dummy variables
+weekday_dummies <- model.matrix(~ factor(weekday_int) - 1, data = peaks)
+
+for (i in 1:7) {
+    peaks[[paste0("DoW_", i)]] <- weekday_dummies[, i]
+}
+
+
+
 predict_arma <- function(data, d) {
     # INPUT:
     # data
@@ -36,15 +45,9 @@ predict_arma <- function(data, d) {
             load_origin = load,
             load = log(load)
         )
-    # Create weekday dummy variables
-    weekday_dummies <- model.matrix(~ factor(weekday_int) - 1, data = data)
-    for (i in 1:7) {
-        data[[paste0("DoW_", i)]] <- weekday_dummies[, i]
-    }
 
     # Train/Test Split
     train <- data[d:(364 + d), ]
-    test <- data[(365 + d), ]
 
     # ------- TRAINING ----------
     # Set up the X matrix for training
@@ -57,6 +60,7 @@ predict_arma <- function(data, d) {
     model <- arima(train$load, c(1, 1, 1), xreg = x_reg)
 
     # --------- TESTING ------------
+    test <- data[(365 + d), ]
     # New test data
     x_reg_new <- test |>
         select(all_of(x_train)) |>
@@ -71,11 +75,30 @@ predict_arma <- function(data, d) {
 
 # Run the predictons for some days
 predictions <- data.frame(matrix(ncol = 17, nrow = 0))
-for (i in 1:365) {
+pred_length <- 471 # in days
+for (i in 1:pred_length) {
     print(i)
     value <- predict_arma(peaks, i)
     predictions <- rbind(predictions, value)
 }
+
+# ---------- Storing the data ------------
+store <- data.frame(matrix(ncol = 0, nrow = pred_length))
+
+# Adjusting the 'data' dataframe
+store$ds <- predictions$date # Ensuring 'ds' is the first column
+
+# Actual values 'y'
+store$y <- predictions$load_origin
+
+# Predicted values 'yhat'
+store$yhat <- predictions$y_hat
+
+# Calculating residuals for the training part
+store$residuals <- store$y - store$yhat
+
+write.csv(store, file = "./data/forecasts/peaks_22-24_model-arima(1,1,1).csv", row.names = FALSE)
+
 
 
 # Reshape the dataframe to long format
