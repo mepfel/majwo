@@ -35,8 +35,8 @@ ggplot(peaks, aes(x = load)) +
 ggplot(peaks, aes(hour_int)) +
   geom_histogram(binwidth = 1) +
   labs(
-    title = "Histogramm of load peaks from 2022 to 2024 per 15 min",
-    x = "Time in 15 min intervalls"
+    x = "Hour of the day",
+    y = "Count"
   )
 
 # Grouped by working day
@@ -71,9 +71,9 @@ ggplot(peaks, aes(x = hour_int, y = load, color = working_day)) +
   geom_point() +
   scale_x_continuous(breaks = seq(min(peaks$hour_int), max(peaks$hour_int), by = 1)) +
   labs(
-    title = "Scatterplot of Load peaks from 2022 - 2024",
     x = "Hour of the day",
-    y = "Load in MWh"
+    y = "Load in MWh",
+    color = "Working day"
   )
 
 # --- Bivariate Density of Load peaks ---
