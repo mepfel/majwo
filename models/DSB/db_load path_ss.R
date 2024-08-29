@@ -1,7 +1,7 @@
 library(tidyverse)
 library(scoringRules)
 library(copula)
-# This is a first general implementation of version B
+# This is a first general implementation of the Shaake Shuffle algoithm
 
 # Load the model data
 
