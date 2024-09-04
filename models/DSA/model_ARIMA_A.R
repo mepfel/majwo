@@ -34,7 +34,23 @@ for (i in 1:7) {
     data[[paste0("DoW_", i)]] <- weekday_dummies[, i]
 }
 
+x_train <- c("is_holiday", "DoW_2", "DoW_3", "DoW_4", "DoW_5", "DoW_6", "DoW_7")
+x_reg <- train |>
+    select(all_of(x_train)) |>
+    as.matrix()
 
+# Auto ARIMA
+arima1 <- auto.arima(train$load, xreg = x_reg)
+arima1
+
+# ARIMA
+model <- arima(train$load, c(1, 1, 1), xreg = x_reg)
+
+summary(model)
+
+checkresiduals(model)
+
+train$resids <- as.numeric(model$residuals)
 
 predict_arma <- function(data, d) {
     # INPUT:

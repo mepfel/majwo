@@ -56,73 +56,6 @@ checkresiduals(AR7)
 pacf(AR7$residuals)
 AIC(AR7)
 
-x_train <- c("is_holiday", "DoW_2", "DoW_3", "DoW_4", "DoW_5", "DoW_6", "DoW_7")
-x_reg <- train |>
-    select(all_of(x_train)) |>
-    as.matrix()
-
-# Auto ARIMA
-arima1 <- auto.arima(train$load, xreg = x_reg)
-arima1
-
-# ARIMA
-model <- arima(train$load, c(1, 1, 1), xreg = x_reg)
-
-summary(model)
-
-checkresiduals(model)
-
-train$resids <- as.numeric(model$residuals)
-
-
-# --------- TESTING ------------
-n <- 7
-test <- data[(365 + 1):(365 + n), ]
-x_reg_new <- test |>
-    select(all_of(x_train)) |>
-    as.matrix()
-
-yhat_test <- as.numeric(predict(model, n.ahead = n, newxreg = x_reg_new)$pred)
-
-# Plot
-
-# Assuming yhat_test has been calculated for the first n observations in df_test
-# and df_test has at least n rows
-plot_data <- data.frame(
-    time = 1:n,
-    Actual = test$load,
-    Predicted = yhat_test
-)
-
-
-data <- data.frame(matrix(ncol = 0, nrow = nrow(df_train) + n))
-
-# Adjusting the 'data' dataframe
-data$ds <- peaks$date[1:(nrow(df_train) + n)] # Ensuring 'ds' is the first column
-
-# Actual values 'y'
-data$y <- peaks$load[1:(nrow(df_train) + n)]
-
-# Predicted values 'yhat'
-data$yhat <- c(yhat_train, yhat_test)
-
-# Calculating residuals for the training part
-data$residuals <- data$y - data$yhat
-
-write.csv(data, file = "./data/forecasts/peaks_22-24_model-arma.csv", row.names = FALSE)
-
-
-# ------ PLOTTING -------
-# Melting the data for easier plotting with ggplot
-plot_data_long <- reshape2::melt(plot_data, id.vars = "time")
-
-# Plotting
-ggplot(plot_data_long, aes(x = time, y = value, color = variable)) +
-    geom_line() +
-    labs(title = "Actual vs Predicted Load", x = "Time", y = "Load") +
-    theme_minimal() +
-    scale_color_manual(values = c("Actual" = "blue", "Predicted" = "red"))
-
 
 # TRAIN/TEST/PREDICT
 
@@ -163,6 +96,7 @@ predict_ar7 <- function(data, d) {
 
     yhat_test <- as.numeric(predict(model, newdata = test))
 
+    # Transformation muss eventuell angepasst werden
     test$y_hat <- exp(yhat_test)
     return(test)
 }
