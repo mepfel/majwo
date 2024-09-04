@@ -88,7 +88,7 @@ print(adf_test)
 
 data <- energy_load |>
     filter((year(date) >= 2022) & (year(date) < 2023)) |>
-    filter(hour_int == 3)
+    filter(hour_int == 13)
 
 # Log Transformation
 data <- data |>
@@ -122,7 +122,7 @@ checkresiduals(statio)
 
 # Perform the Augmented Dickey-Fuller test for stationarity
 
-adf_test <- adf.test(statio$residuals)
+adf_test <- adf.test(diff(data$load))
 print(adf_test)
 
 

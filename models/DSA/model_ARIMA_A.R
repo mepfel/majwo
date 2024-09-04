@@ -25,7 +25,7 @@ peaks <- energy_load |>
 
 
 data <- peaks |>
-    filter(year(date) >= 2022)
+    filter(year(date) >= 2015)
 
 # Create weekday dummy variables
 weekday_dummies <- model.matrix(~ factor(weekday_int) - 1, data = data)
@@ -33,7 +33,7 @@ weekday_dummies <- model.matrix(~ factor(weekday_int) - 1, data = data)
 for (i in 1:7) {
     data[[paste0("DoW_", i)]] <- weekday_dummies[, i]
 }
-
+# ---------------------------------------
 x_train <- c("is_holiday", "DoW_2", "DoW_3", "DoW_4", "DoW_5", "DoW_6", "DoW_7")
 x_reg <- train |>
     select(all_of(x_train)) |>
@@ -87,7 +87,7 @@ predict_arma <- function(data, d) {
         as.matrix()
 
     yhat_test <- as.numeric(predict(model, n.ahead = 1, newxreg = x_reg_new)$pred)
-
+    # Transformation could be an issue!!!!
     test$y_hat <- exp(yhat_test)
     return(test)
 }
@@ -95,7 +95,7 @@ predict_arma <- function(data, d) {
 
 # Run the predictons for some days
 predictions <- data.frame(matrix(ncol = 17, nrow = 0))
-pred_length <- 471 # in days
+pred_length <- 365 # in days
 for (i in 1:pred_length) {
     print(i)
     value <- predict_arma(data, i)
@@ -117,7 +117,7 @@ store$yhat <- predictions$y_hat
 # Calculating residuals for the training part
 store$residuals <- store$y - store$yhat
 
-write.csv(store, file = "./data/forecasts/peaks_22-24_model-arima(1,1,1).csv", row.names = FALSE)
+write.csv(store, file = "./data/forecasts/peaks_16_model-arima(1,1,1).csv", row.names = FALSE)
 
 
 

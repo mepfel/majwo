@@ -22,7 +22,7 @@ peaks <- energy_load |>
     as.data.frame()
 
 data <- peaks |>
-    filter(year(date) >= 2022)
+    filter(year(date) >= 2015)
 
 
 # -----------------------------------------
@@ -58,6 +58,7 @@ AIC(AR7)
 
 
 # TRAIN/TEST/PREDICT
+# -----------------------------------------
 
 predict_ar7 <- function(data, d) {
     # INPUT:
@@ -104,7 +105,7 @@ predict_ar7 <- function(data, d) {
 
 # Run the predictons for some days
 predictions <- data.frame(matrix(ncol = 17, nrow = 0))
-pred_length <- 464 # in days
+pred_length <- 365 # in days
 for (i in 1:pred_length) {
     print(i)
     value <- predict_ar7(data, i)
@@ -126,7 +127,7 @@ store$yhat <- predictions$y_hat
 # Calculating residuals for the training part
 store$residuals <- store$y - store$yhat
 
-write.csv(store, file = "./data/forecasts/peaks_22-24_model-ar7.csv", row.names = FALSE)
+write.csv(store, file = "./data/forecasts/peaks_16_model-ar7.csv", row.names = FALSE)
 
 
 

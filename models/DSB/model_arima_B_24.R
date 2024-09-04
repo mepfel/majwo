@@ -16,7 +16,7 @@ energy_load$date <- as.POSIXct(energy_load$date, tz = "UTC")
 # Train/Test Split
 # Taking the years 2022 for training
 data <- energy_load |>
-    filter(year(date) >= 2022)
+    filter(year(date) >= 2015)
 
 # Create weekday dummy variables
 weekday_dummies <- model.matrix(~ factor(weekday_int) - 1, data = data)
@@ -112,16 +112,14 @@ predict_arima <- function(data, d) {
 
     x_train <- c("is_holiday", "DoW_2", "DoW_3", "DoW_4", "DoW_5", "DoW_6", "DoW_7")
 
-    mean_h_log <- numeric(24)
     # For every hour, one model
     for (i in seq(0, 23)) {
         print(i)
         train_h <- train |>
             filter(hour(date) == i)
 
-        mean_h_log[i + 1] <- mean(log(train_h$load))
 
-        train_h$load <- log(train_h$load) - mean_h_log[i + 1]
+        train_h$load <- log(train_h$load)
         x_reg <- train_h |>
             select(all_of(x_train)) |>
             as.matrix()
@@ -141,7 +139,7 @@ predict_arima <- function(data, d) {
     predictions <- numeric(24)
     for (i in 1:24) {
         model <- get(paste0("model_", (i - 1)))
-        predictions[i] <- exp(as.numeric(predict(model, newxreg = t(x_reg_new[i, ]))$pred) + mean_h_log[i])
+        predictions[i] <- exp(as.numeric(predict(model, newxreg = t(x_reg_new[i, ]))$pred))
     }
 
     data_test <- data[(24 * d + 365 * 24 - 23):(24 * d + 365 * 24), ]
@@ -151,7 +149,7 @@ predict_arima <- function(data, d) {
 
 # Run the predictons for some days
 predictions <- data.frame(matrix(ncol = 15, nrow = 0))
-pred_length <- 471 # in days
+pred_length <- 10 # in days
 for (i in 1:pred_length) {
     print(i)
     value <- predict_arima(data, i)

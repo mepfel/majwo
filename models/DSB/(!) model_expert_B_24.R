@@ -16,7 +16,7 @@ energy_load$date <- as.POSIXct(energy_load$date, tz = "UTC")
 # Train/Test Split
 # Taking the years 2023 for training
 data <- energy_load |>
-    filter(year(date) >= 2022)
+    filter(year(date) >= 2015)
 
 # Create weekday dummy variables
 weekday_dummies <- model.matrix(~ factor(weekday_int) - 1, data = data)
@@ -27,14 +27,12 @@ for (i in 1:7) {
 
 # ------------------------------------
 # Log Transformation
-# Transformation is ON THE WRING PLACE!!
+# Transformation is ON THE WRONG PLACE!!
 data <- data |>
     group_by(hour_int) |>
     mutate(
         load_origin = load,
-        log_load = log(load),
-        mean_log_load = mean(log(load)),
-        load = log_load - mean_log_load
+        load = log(load)
     ) |>
     ungroup()
 
@@ -56,11 +54,12 @@ data <- na.omit(data)
 
 # Formula for the regression
 formula <- load ~ Y_d_1_h + Y_d_2_h + Y_d_7_h + Y_d_1_min + Y_d_1_max + Y_d_1_24 +
-    DoW_1 + DoW_6 + DoW_7 + is_holiday
+    weekday_int + is_holiday
 
 # Fit the regression model
 # Use One year for training
 train <- data[1:(365 * 24), ]
+train <- data[(24 * d - 23):(((364 + d) * 24)), ]
 
 
 # For every hour, one model
@@ -74,7 +73,7 @@ for (i in seq(0, 23)) {
 }
 
 # Print the summary of the model
-summary(model_1)
+summary(model_11)
 
 checkresiduals(model_10)
 # If you want to use robust standard errors
@@ -111,7 +110,7 @@ predict_expert <- function(data, d) {
     # ------- TRAINING ----------
     # Formula for the regression
     formula <- load ~ Y_d_1_h + Y_d_2_h + Y_d_7_h + Y_d_1_min + Y_d_1_max + Y_d_1_24 +
-        DoW_1 + DoW_6 + DoW_7 + is_holiday
+        weekday_int + is_holiday
 
     # Fit the regression model
     # Use One year for training
@@ -121,13 +120,9 @@ predict_expert <- function(data, d) {
         group_by(hour_int) |>
         mutate(
             load_origin = load,
-            log_load = log(load),
-            mean_log_load = mean(log(load)),
-            load = log_load - mean_log_load
+            load = log(load),
         ) |>
         ungroup()
-    # Store the mean log for back transformation
-    mean_h_log <- train$mean_log_load[1:24]
 
     # Lagged variables for the model
     train <- train |>
@@ -182,13 +177,13 @@ predict_expert <- function(data, d) {
     test <- na.omit(test)
 
     data_test <- data[(24 * d + 365 * 24 - 23):(24 * d + 365 * 24), ]
-    data_test$y_hat <- exp(predictions + mean_h_log)
+    data_test$y_hat <- exp(predictions)
     return(data_test)
 }
 
 # Run the predictons for some days
 predictions <- data.frame(matrix(ncol = 15, nrow = 0))
-pred_length <- 471 # in days
+pred_length <- 50 # in days
 for (i in 1:pred_length) {
     print(i)
     value <- predict_expert(data, i)
@@ -205,7 +200,6 @@ fig <- ggplot(predictions_long, aes(x = date, y = value, color = type)) +
     labs(x = "Date", y = "Value", title = "Load and Predicted Load Over Time - Expert Model") +
     theme_minimal() # Use a minimal theme for aesthetics
 fig
-
 # ---------- Storing the data ------------
 store <- data.frame(matrix(ncol = 0, nrow = (pred_length * 24)))
 
@@ -221,7 +215,7 @@ store$yhat <- predictions$y_hat
 # Calculating residuals for the training part
 store$residuals <- store$y - store$yhat
 
-write.csv(store, file = "./data/forecasts/loads_22-24_model-expert.csv", row.names = FALSE)
+write.csv(store, file = "./data/forecasts/loads_16_model-expert.csv", row.names = FALSE)
 
 
 
