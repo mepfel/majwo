@@ -118,7 +118,6 @@ predict_arima <- function(data, d) {
         train_h <- train |>
             filter(hour(date) == i)
 
-        train_h$load <- log(train_h$load)
         x_reg <- train_h |>
             select(all_of(x_train)) |>
             as.matrix()
@@ -148,7 +147,7 @@ predict_arima <- function(data, d) {
 
 # Run the predictons for some days
 predictions <- data.frame(matrix(ncol = 15, nrow = 0))
-pred_length <- 30 # in days
+pred_length <- 2 # in days
 for (i in 1:pred_length) {
     print(i)
     value <- predict_arima(data, i)
@@ -170,7 +169,7 @@ fig <- ggplot(plot_data_long, aes(x = date, y = value, color = variable)) +
     labs(title = "Actual vs Predicted Load", y = "Load", x = "Date") +
     theme_minimal() +
     scale_color_manual(values = c("Actual" = "red", "Predicted" = "blue"))
-
+fig
 library(plotly)
 ggplotly(fig)
 # ---------- Storing the data ------------
