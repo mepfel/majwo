@@ -2,29 +2,25 @@ library(tidyverse)
 library(scoringRules)
 library(ggplot2)
 
+
 # Load the model data
-
-# Here: NeuralProphet
-# model <- read.csv("./data/forecasts/peaks_22-24_model-neuralprophet.csv")
-# model$ds <- as.POSIXct(model$ds, tz = "UTC")
-
-# Here: Arma
-model <- read.csv("./data/forecasts/peaks_22-24_model-arima(1,1,1).csv")
+# Change the name to change the model
+model <- read.csv("./data/forecasts/peaks_16_model-neuralprophet.csv")
 model$ds <- as.POSIXct(model$ds, tz = "UTC")
 
 # specify the length for the error learning phase in days
-length <- 365
+length <- 182 # According to recent advantages paper...
 
 
 # Daten mit übergeben!!!
-getCRPS_A <- function(d, data) {
+getDIS_errors <- function(d, data) {
     # Parameter: d day to predict
+    # Parameter: data [y ... peak load, yhat ... point prediction, residuals ... residial peak load]
     print(d)
     # --------- Error Learning Phase ---------
 
-    # Getting the test data: starting from day i get the next 365 days
-    # Achtung: Hier dürfen nur Training oder Testing data verwendet werden
-    df_train <- data[d:(364 + d), ]
+    # Getting the test data: starting from day s get the next length days
+    df_train <- data[d:(length + d - 1), ]
 
     # Standardize the residuals
     mu_resid <- mean(df_train$residuals)
@@ -65,24 +61,36 @@ getCRPS_A <- function(d, data) {
     }
     print("Prediction DONE...")
 
-    # Histogram
-    # hist(peaks_dis_A[, "values"], main = "Histogram of Peaks Distribution A", xlab = "Peaks", breaks = "Sturges")
-
     # Extracting the peak from the test day
     peak <- df_test[, "y"]
+    date <- df_test[, "ds"]
 
-    # CRPS-Score
-    crps_sample(peak, peaks_dis_A[, "values"])
+    # Return peak and their distribution
+    # CRPS Version: crps_sample(peak, peaks_dis_A[, "values"])
+    return(data.frame(date = date, peak = peak, peak_dis = t(peaks_dis_A$values)))
 }
 
-# specify the length for rolling iterations in days
-len_test <- 100
-crps_scores <- list()
+# Calculate the maximal possible length
+length(model[, "residuals"]) - length
+
+
+# specify the length for testing period in days
+len_test <- 184
+
+peak_dis <- data.frame()
 for (d in seq(1, len_test)) {
-    crps_score <- getCRPS_A(d, model)
-    # Append the CRPS score to the list
-    crps_scores[[d]] <- crps_score
+    dis <- getDIS_errors(d, model)
+    peak_dis <- rbind(peak_dis, dis)
 }
 
-print("Mean CRPS for 100 days in 2024")
-print(mean(unlist(crps_scores)))
+write.csv(peak_dis, file = "./evaluation/pb_error-learning-NN.csv", row.names = FALSE)
+
+
+# get the crps score
+crps_scores <- crps_sample(peak_dis$peak, as.matrix(peak_dis[, 3:ncol(peak_dis)]))
+print("Mean CRPS")
+print(mean(crps_scores))
+
+plot(crps_scores)
+# Histogram
+# hist(peaks_dis_A[, "values"], main = "Histogram of Peaks Distribution A", xlab = "Peaks", breaks = "Sturges")

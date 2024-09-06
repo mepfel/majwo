@@ -5,12 +5,7 @@ library(copula)
 
 # Load the model data
 
-# Here: NeuralProphet
-# model <- read.csv("./data/forecasts/load_22-24_model-neuralprophet_2024IsForecasted.csv")
-# model$ds <- as.POSIXct(model$ds, tz = "UTC")
-
-# Here: Arma
-model <- read.csv("./data/forecasts/loads_22-24_model-expert.csv")
+model <- read.csv("./data/forecasts/loads_16_model-expert.csv")
 model$ds <- as.POSIXct(model$ds, tz = "UTC")
 
 
@@ -18,12 +13,12 @@ model$ds <- as.POSIXct(model$ds, tz = "UTC")
 length <- 365
 
 # data als Parameter übergeben
-getCRPS_B <- function(d, data) {
+getDIS_ss <- function(d, data) {
     print(d)
     # --------- Error Learning Phase ---------
     # Getting the test data: starting from day i get the next 365 days
     # Achtung: Hier dürfen nur Training oder Testing data verwendet werden
-    df_train <- data[((d - 1) * 24 + 1):(((364 + d) * 24) - 1), ]
+    df_train <- data[((d - 1) * 24 + 1):(((length + d - 1) * 24)), ]
 
     mu_sigma <- data.frame(hour = seq(0, 23), mu = rep(0, 24), sigma = rep(0, 24))
 
@@ -101,8 +96,7 @@ getCRPS_B <- function(d, data) {
     quantiles <- seq(1 / (m + 1), m / (m + 1), 1 / (m + 1))
 
     # Get the next 24 hours after the testing period
-    # Hier nur Testing data vom Model!!!
-    df_test <- data[(((d + 365 - 1) * 24) + 1):((d + 365) * 24), ]
+    df_test <- data[(((d + length - 1) * 24) + 1):((d + length) * 24), ]
 
     predict_point <- df_test[, "yhat"]
 
@@ -125,24 +119,36 @@ getCRPS_B <- function(d, data) {
     print("Prediction DONE...")
 
     # Extracting the peaks from the multivariate distribution
-    peaks_dis_B <- apply(multivariate_forecast, MARGIN = 1, FUN = max)
+    peaks_dis <- apply(multivariate_forecast, MARGIN = 1, FUN = max)
 
-    # Extracting the peak from the test day
-    peak <- max(df_test[, "y"])
+    # Extracting the row with the maximum load value from df_test
+    max_load_row <- df_test[which.max(df_test[, "y"]), ]
 
-    # hist(peaks_dis_B, main = "Histogram of Peaks Distribution B", xlab = "Peaks", breaks = "Sturges")
+    # Extracting the peak load value
+    peak <- as.numeric(max_load_row["y"])
 
-    return(crps_sample(peak, peaks_dis_B))
+    # Extracting the date corresponding to the peak load value
+    date <- max_load_row["ds"]
+
+    return(data.frame(date = date, peak = peak, peak_dis = t(peaks_dis)))
 }
 
 # specify the length for rolling iterations in days
-len_test <- 100
-crps_scores <- list()
+len_test <- 50
+
+peak_dis <- data.frame()
 for (d in seq(1, len_test)) {
-    crps_score <- getCRPS_B(d, model)
-    # Append the CRPS score to the list
-    crps_scores[[d]] <- crps_score
+    dis <- getDIS_ss(d, model)
+    peak_dis <- rbind(peak_dis, dis)
 }
 
-print("Mean CRPS for 100 days in 2024")
-print(mean(unlist(crps_scores)))
+
+write.csv(peak_dis, file = "./evaluation/db_ss.csv", row.names = FALSE)
+
+# get the crps score
+crps_scores <- crps_sample(peak_dis$peak, as.matrix(peak_dis[, 3:ncol(peak_dis)]))
+print("Mean CRPS")
+print(mean(crps_scores))
+
+
+plot(crps_scores)

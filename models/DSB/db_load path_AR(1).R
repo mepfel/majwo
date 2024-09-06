@@ -30,6 +30,9 @@ energy_load <- read.csv("./data/load_15-24.csv") |>
 
 energy_load$date <- as.POSIXct(energy_load$date, tz = "UTC")
 
+data <- energy_load |> filter(year(date) >= 2015)
+
+# --------------------------------------------------------------------------
 # Take one year for training
 data <- energy_load |>
     filter((year(date) >= 2022) & (year(date) < 2023)) |>
@@ -127,7 +130,7 @@ ggplot(df_loads, aes(x = index)) +
 length <- 364
 
 # data als Parameter übergeben
-getCRPS_ar1 <- function(d, data) {
+getDIS_ar1 <- function(d, data) {
     print(d)
     # Getting the train data: starting from day i get the next 365 days
     df_train <- data[((d - 1) * 24 + 1):((length + d) * 24), ] |>
@@ -196,35 +199,33 @@ getCRPS_ar1 <- function(d, data) {
     # Extracting the peaks from the multivariate distribution
     peaks_dis <- apply(multivariate_forecast, MARGIN = 1, FUN = max)
 
-    # Extracting the peak from the test day
-    peak <- max(df_test[, "load"])
+    # Extracting the row with the maximum load value from df_test
+    max_load_row <- df_test[which.max(df_test[, "load"]), ]
 
-    return(crps_sample(peak, peaks_dis))
+    # Extracting the peak load value
+    peak <- as.numeric(max_load_row["load"])
+
+    # Extracting the date corresponding to the peak load value
+    date <- max_load_row["date"]
+
+    return(data.frame(date = date, peak = peak, peak_dis = t(peaks_dis)))
 }
 
 
 # specify the length for rolling iterations in days
-len_test <- 100
-crps_scores <- list()
+len_test <- 365
+
+peak_dis <- data.frame()
 for (d in seq(1, len_test)) {
-    crps_score <- getCRPS_B(d, model)
-    # Append the CRPS score to the list
-    crps_scores[[d]] <- crps_score
+    dis <- getDIS_ar1(d, data)
+    peak_dis <- rbind(peak_dis, dis)
 }
 
+write.csv(peak_dis, file = "./evaluation/db_ar1.csv", row.names = FALSE)
 
+# get the crps score
+crps_scores <- crps_sample(peak_dis$peak, as.matrix(peak_dis[, 3:ncol(peak_dis)]))
+print("Mean CRPS")
+print(mean(crps_scores))
 
-print("Mean CRPS for 100 days in 2024")
-print(mean(unlist(crps_scores)))
-
-
-# Create a histogram for peaks_dis using base R
-hist(peaks_dis,
-    breaks = 30,
-    col = "blue",
-    border = "black",
-    main = "Distribution of Peaks",
-    xlab = "Peaks",
-    ylab = "Frequency"
-)
-peak
+plot(crps_scores)

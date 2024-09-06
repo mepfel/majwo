@@ -2,7 +2,7 @@ library(tidyverse)
 library(scoringRules)
 
 # --- Load the energy data ---
-energy_load <- read.csv("./data/load_22-24.csv")
+energy_load <- read.csv("./data/load_15-24.csv")
 energy_load$date <- as.POSIXct(energy_load$date, tz = "UTC")
 
 # --- Getting the peaks ---
@@ -14,19 +14,43 @@ peaks <- energy_load |>
 # Setting the window and the days to go away from the latest observation (starting from the newest one in
 # the dataset)
 
-window <- 100
-days <- 1
+window <- 90
+data <- data.frame(peaks[, c("date", "load")])
 
-# ----- Rolling Window Method #A for Peaks -----
-# Getting the last 100 - 1 observation from the peaks
-get_peaks_rolling <- function(days) {
-    peaks_rolling <- peaks[(nrow(peaks) - window - days + 1):(nrow(peaks) - days), c(1, 2, 3)] |>
-        arrange(desc(date))
 
-    return(as.matrix(cbind(peaks_rolling$hour_int, peaks_rolling$load)))
+# ----- Rolling Window Method #A for Peaks (which is equal for Rollowing Window Method #B) -----
+# Getting the last window observation from the peaks
+getDIS_rolling <- function(d, data) {
+    peaks_rolling <- as.numeric(data[(d - window):(d - 1), "load"])
+    return(data.frame(date = data[d, "date"], peak = data[d, "load"], peak_dis = t(peaks_rolling)))
 }
 
+# specify the length for testing period in days
+len_test <- 365
 
+# specify the start day (index 366 is 01.01.2016)
+start <- 366
+d <- start
+
+peak_dis <- data.frame()
+while (d < (len_test + start)) {
+    print(d)
+    dis <- getDIS_rolling(d, data)
+    peak_dis <- rbind(peak_dis, dis)
+    d <- d + 1
+}
+
+write.csv(peak_dis, file = "./evaluation/db_hist-sim-2016.csv", row.names = FALSE)
+
+
+# get the crps score
+crps_scores <- crps_sample(peak_dis$peak, as.matrix(peak_dis[, 3:ncol(peak_dis)]))
+print("Mean CRPS")
+print(mean(crps_scores))
+
+plot(crps_scores)
+
+# -----------------------------------------------------------------------------------
 # ----- Rolling Window Method #B based on Load Forecast ----
 
 get_peaks_rolling_loads <- function(days) {
