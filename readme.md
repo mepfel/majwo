@@ -1,5 +1,5 @@
 ### Installed packages
 
 ```{r}
-install.packages(c("tidyverse", "plotly", "scoringRules", "fable", "forecast", "glmnet", "quantreg"))
+install.packages(c("tidyverse", "plotly", "scoringRules", "fable", "forecast", "glmnet", "quantreg", "randomForest"))
 ```

@@ -37,7 +37,7 @@ data <- energy_load |>
     select(-month_int, -working_day)
 data <- na.omit(data)
 
-n <- 8760 * 2
+n <- 8760 * 4
 data <- data[(1:n), ]
 
 # Loop through each row index of data
@@ -66,7 +66,7 @@ for (i in 1:n) {
 # Create the formula string
 formula <- as.formula(paste("y ~", paste(c(paste0("x_", 1:21), "p1", "p2", "hour_int", "weekday_int"), collapse = " + ")))
 
-pred_length <- 100
+pred_length <- 1460
 predictions <- data.frame(matrix(ncol = 52, nrow = 0))
 for (d in 1:pred_length) {
     print(d)
@@ -76,6 +76,9 @@ for (d in 1:pred_length) {
     y_hat <- as.numeric(predict(rf, test))
     test$load_p <- y_hat * test$std + test$mean
     predictions <- rbind(predictions, test)
+    if( d  %% 500) {
+        write.csv(predictions, file = "./data/forecasts/loads_16-19_model-rf-CACHE.csv", row.names = FALSE)
+    }
 }
 
 # ---------- Storing the data ------------
@@ -93,7 +96,7 @@ store$yhat <- predictions$load_p
 # Calculating residuals for the training part
 store$residuals <- store$y - store$yhat
 
-write.csv(store, file = "./data/forecasts/loads_16_model-rf.csv", row.names = FALSE)
+write.csv(store, file = "./data/forecasts/loads_16-19_model-rf.csv", row.names = FALSE)
 
 
 # Reshape the test data frame to long format
