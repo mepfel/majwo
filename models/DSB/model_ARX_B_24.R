@@ -129,7 +129,7 @@ predict_expert <- function(data, d) {
 
 # Run the predictons for some days
 predictions <- data.frame(matrix(ncol = 15, nrow = 0))
-pred_length <- 50 # in days
+pred_length <- 359 # in days
 for (i in 1:pred_length) {
     print(i)
     value <- predict_expert(data, i)
@@ -154,7 +154,7 @@ store <- data.frame(matrix(ncol = 0, nrow = (pred_length * 24)))
 store$ds <- predictions$date # Ensuring 'ds' is the first column
 
 # Actual values 'y'
-store$y <- predictions$load
+store$y <- predictions$load_origin
 
 # Predicted values 'yhat'
 store$yhat <- predictions$y_hat
@@ -162,7 +162,7 @@ store$yhat <- predictions$y_hat
 # Calculating residuals for the training part
 store$residuals <- store$y - store$yhat
 
-write.csv(store, file = "./data/forecasts/loads_16_model-ar.csv", row.names = FALSE)
+write.csv(store, file = "./data/forecasts/loads_16_model-arx.csv", row.names = FALSE)
 
 
 
