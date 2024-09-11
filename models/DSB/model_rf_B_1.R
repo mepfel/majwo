@@ -76,7 +76,7 @@ for (d in 1:pred_length) {
     y_hat <- as.numeric(predict(rf, test))
     test$load_p <- y_hat * test$std + test$mean
     predictions <- rbind(predictions, test)
-    if( d  %% 500) {
+    if (d %% 500) {
         write.csv(predictions, file = "./data/forecasts/loads_16-19_model-rf-CACHE.csv", row.names = FALSE)
     }
 }
@@ -96,7 +96,7 @@ store$yhat <- predictions$load_p
 # Calculating residuals for the training part
 store$residuals <- store$y - store$yhat
 
-write.csv(store, file = "./data/forecasts/loads_16-19_model-rf.csv", row.names = FALSE)
+write.csv(store, file = "./data/forecasts/loads_16-18_model-rf.csv", row.names = FALSE)
 
 
 # Reshape the test data frame to long format

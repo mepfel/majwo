@@ -31,7 +31,7 @@ for (i in 1:7) {
 }
 
 # --------------------------------------
-d <- 5
+d <- 80
 # Use One year for training
 length_testing <- 364
 
@@ -56,9 +56,11 @@ for (i in seq(0, 23)) {
         as.matrix()
 
     model <- auto.arima(train_h$load, xreg = x_reg, allowdrift = FALSE)
+    print(model)
     assign(paste0("model_", i), model)
 }
-
+# List of optimal Arima models based on a random draw from the sample
+list <- list(c(3, 1, 2), c(0, 1, 2), c(0, 1, 2), c(1, 1, 2), c(1, 1, 2), c(1, 1, 2), c(1, 1, 2), c(1, 1, 2), c(1, 1, 2), c(1, 1, 2), c(1, 1, 2), c(1, 1, 2), c(1, 1, 2), c(2, 1, 2), c(1, 1, 2), c(1, 1, 2), c(1, 1, 3), c(1, 1, 2), c(1, 1, 2), c(1, 1, 2), c(1, 1, 2), c(1, 1, 2), c(2, 1, 1), c(2, 1, 1))
 # Print the summary of the model
 summary(model_1)
 coeftest(model_1)
@@ -122,7 +124,9 @@ predict_arima <- function(data, d) {
             select(all_of(x_train)) |>
             as.matrix()
 
-        model <- auto.arima(train_h$load, xreg = x_reg, allowdrift = FALSE)
+        # model <- auto.arima(train_h$load, xreg = x_reg, allowdrift = FALSE)
+        # ARIMA (1,1,2)
+        model <- arima(train_h$load, c(1, 1, 2), xreg = x_reg)
         assign(paste0("model_", i), model)
     }
 
@@ -147,7 +151,7 @@ predict_arima <- function(data, d) {
 
 # Run the predictons for some days
 predictions <- data.frame(matrix(ncol = 15, nrow = 0))
-pred_length <- 2 # in days
+pred_length <- 1000 # in days
 for (i in 1:pred_length) {
     print(i)
     value <- predict_arima(data, i)
@@ -158,7 +162,7 @@ for (i in 1:pred_length) {
 # -------- Plotting --------
 # Assuming 'date' is the vector of dates corresponding to your test data
 # Create a new data frame for plotting
-plot_data <- data.frame(date = predictions$date, Actual = predictions$load, Predicted = predictions$y_hat)
+plot_data <- data.frame(date = predictions$date, Actual = predictions$load_origin, Predicted = predictions$y_hat)
 
 # Melt the data frame for easier plotting with ggplot
 plot_data_long <- reshape2::melt(plot_data, id.vars = "date")
@@ -187,4 +191,4 @@ store$yhat <- predictions$y_hat
 # Calculating residuals for the training part
 store$residuals <- store$y - store$yhat
 
-write.csv(store, file = "./data/forecasts/loads_22-24_model-arima-24.csv", row.names = FALSE)
+write.csv(store, file = "./data/forecasts/loads_16-18_model-arima-24.csv", row.names = FALSE)
