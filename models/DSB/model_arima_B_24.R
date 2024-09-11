@@ -183,7 +183,7 @@ store <- data.frame(matrix(ncol = 0, nrow = (pred_length * 24)))
 store$ds <- predictions$date # Ensuring 'ds' is the first column
 
 # Actual values 'y'
-store$y <- predictions$load
+store$y <- predictions$load_origin
 
 # Predicted values 'yhat'
 store$yhat <- predictions$y_hat

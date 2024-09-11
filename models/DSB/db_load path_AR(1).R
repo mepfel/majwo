@@ -213,7 +213,7 @@ getDIS_ar1 <- function(d, data) {
 
 
 # specify the length for rolling iterations in days
-len_test <- 365
+len_test <- 1000
 
 peak_dis <- data.frame()
 for (d in seq(1, len_test)) {

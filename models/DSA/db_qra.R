@@ -5,14 +5,16 @@ library(quantreg)
 
 # ---- Getting the data ----
 
-model1 <- read.csv("./data/forecasts/peaks_16_model-ar7.csv")
-model2 <- read.csv("./data/forecasts/peaks_16_model-arima(1,1,1).csv")
-model3 <- read.csv("./data/forecasts/peaks_16_model-neuralprophet.csv")
+model1 <- read.csv("./data/forecasts/peaks_16-18_model-ar7.csv")
+model2 <- read.csv("./data/forecasts/peaks_16-18_model-arima(1,1,1).csv")
+model3 <- read.csv("./data/forecasts/peaks_16-18_model-rf.csv")
 
-data <- model1[1:(nrow(model1) - 6), 1:2]
-data$x1 <- model1[1:(nrow(model1) - 6), ]$yhat
-data$x2 <- model2[8:nrow(model2), ]$yhat
-data$x3 <- model3[8:nrow(model3), ]$yhat
+# Merge the data frames based on the ds and y columns and select only the yhat columns
+data <- model1 |>
+    inner_join(model2, by = c("ds", "y"), suffix = c("_model1", "_model2")) |>
+    inner_join(model3, by = c("ds", "y"), suffix = c("", "_model3")) |>
+    select(ds, y, x1 = yhat_model1, x2 = yhat_model2, x3 = yhat)
+
 # length of the calibration period
 clength <- 182
 
@@ -59,7 +61,7 @@ getDIS_qra <- function(d, data) {
 length(data[, "y"]) - clength
 
 # specify the length for rolling iterations in days
-len_test <- 177
+len_test <- 797
 
 peak_dis <- data.frame()
 for (d in seq(1, len_test)) {

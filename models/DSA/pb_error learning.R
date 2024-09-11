@@ -1,11 +1,10 @@
 library(tidyverse)
 library(scoringRules)
-library(ggplot2)
 
 
 # Load the model data
 # Change the name to change the model
-model <- read.csv("./data/forecasts/peaks_16_model-neuralprophet.csv")
+model <- read.csv("./data/forecasts/peaks_16-18_model-rf.csv")
 model$ds <- as.POSIXct(model$ds, tz = "UTC")
 
 # specify the length for the error learning phase in days
@@ -75,7 +74,7 @@ length(model[, "residuals"]) - length
 
 
 # specify the length for testing period in days
-len_test <- 184
+len_test <- 818
 
 peak_dis <- data.frame()
 for (d in seq(1, len_test)) {
@@ -83,7 +82,7 @@ for (d in seq(1, len_test)) {
     peak_dis <- rbind(peak_dis, dis)
 }
 
-write.csv(peak_dis, file = "./evaluation/pb_error-learning-NN.csv", row.names = FALSE)
+write.csv(peak_dis, file = "./evaluation/pb_error-rf-16-18.csv", row.names = FALSE)
 
 
 # get the crps score
