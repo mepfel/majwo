@@ -43,7 +43,7 @@ data <- peaks |>
     select(-month_int, -working_day, -as.Date.date.)
 data <- na.omit(data)
 
-n <- 366 * 2
+n <- 366 * 4
 data <- data[(1:n), ]
 
 # Loop through each row index of data
@@ -72,7 +72,7 @@ for (i in 1:n) {
 # Create the formula string
 formula <- as.formula(paste("y ~", paste(c(paste0("x_", 1:21), "p1", "p2", "hour_int", "weekday_int"), collapse = " + ")))
 
-pred_length <- 100
+pred_length <- 1000
 predictions <- data.frame(matrix(ncol = 52, nrow = 0))
 for (d in 1:pred_length) {
     print(d)
@@ -99,9 +99,7 @@ store$yhat <- predictions$load_p
 # Calculating residuals for the training part
 store$residuals <- store$y - store$yhat
 
-
-
-write.csv(store, file = "./data/forecasts/peaks_16_model-rf.csv", row.names = FALSE)
+write.csv(store, file = "./data/forecasts/peaks_16-18_model-rf.csv", row.names = FALSE)
 
 # -----------Plotting -----------------s
 # Reshape the test data frame to long format

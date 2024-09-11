@@ -118,8 +118,6 @@ statio <- lm(data$load ~ data$weekday_int + data$is_holiday + fourier_terms)
 summary(statio)
 
 checkresiduals(statio)
-
-
 # Perform the Augmented Dickey-Fuller test for stationarity
 
 adf_test <- adf.test(diff(data$load))

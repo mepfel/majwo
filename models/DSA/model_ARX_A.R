@@ -105,7 +105,7 @@ predict_ar7 <- function(data, d) {
 
 # Run the predictons for some days
 predictions <- data.frame(matrix(ncol = 17, nrow = 0))
-pred_length <- 365 # in days
+pred_length <- 1000 # in days
 for (i in 1:pred_length) {
     print(i)
     value <- predict_ar7(data, i)
@@ -127,7 +127,7 @@ store$yhat <- predictions$y_hat
 # Calculating residuals for the training part
 store$residuals <- store$y - store$yhat
 
-write.csv(store, file = "./data/forecasts/peaks_16_model-ar7.csv", row.names = FALSE)
+write.csv(store, file = "./data/forecasts/peaks_16-18_model-ar7.csv", row.names = FALSE)
 
 
 

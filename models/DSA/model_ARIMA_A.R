@@ -1,8 +1,6 @@
 library(tidyverse)
-library(scoringRules)
 library(ggplot2)
 library(forecast)
-library(dynlm)
 library(plotly)
 
 # For the holidays
@@ -52,6 +50,8 @@ checkresiduals(model)
 
 train$resids <- as.numeric(model$residuals)
 
+# -------------------------------------
+
 predict_arma <- function(data, d) {
     # INPUT:
     # data
@@ -95,7 +95,7 @@ predict_arma <- function(data, d) {
 
 # Run the predictons for some days
 predictions <- data.frame(matrix(ncol = 17, nrow = 0))
-pred_length <- 366 # in days
+pred_length <- 1000 # in days
 for (i in 1:pred_length) {
     print(i)
     value <- predict_arma(data, i)
@@ -117,7 +117,7 @@ store$yhat <- predictions$y_hat
 # Calculating residuals for the training part
 store$residuals <- store$y - store$yhat
 
-write.csv(store, file = "./data/forecasts/peaks_16_model-arima(1,1,1).csv", row.names = FALSE)
+write.csv(store, file = "./data/forecasts/peaks_16-18_model-arima(1,1,1).csv", row.names = FALSE)
 
 
 
