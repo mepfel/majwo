@@ -31,15 +31,29 @@ $P_d = \hat{P_d} + \epsilon_d \Leftrightarrow F_{P_d}^{-1}(q) = \hat{P_d} + F_{\
 One year for training the model and 182 days to learn the error distribution.
 
 1. ARIMA (pb_arima) - *DSA*
+   - Input: ARIMA(1,1,1), isHoliday, Weekday
+   - Output: 1 peak for the next day
 2. AR7 (pb_ar7) - *DSA*
+   - Input: Lag PeakLoad(1-7), isHoliday, Weekday
+   - Output: 1 peak for the next day
 3. Random Forest (pb_rf) - *DSA*
+   - Input: Lag PeakLoad (1-21), Yearly Componont (Fourier), HourInt, Weekday
+   - Output: 1 peak for the next day
 
 ## Distribution Based  Models
 
 1. Historical Simulation (db_hist_sim) - *DSA, DSB*
+   - Input: 90 past peaks
+   - Output: Peak dis (90 elements)
 2. Quantile Regression Averaging (db_qra) - *DSA*
+   - Input: 3 peak point forecasts (Training length is 182)
+   - Output: Peak dis (90 elements)
 3. Load Path Simulation - AR1 (db_ar1) - *DSB*
-4. Shaake Shuffle (db_ss_ar7, db_ss_arima, db_ss_rf - *DSB*
+   - Input: Stationary Load Series (with factors: Yearly Component(Fourier), Weekday, Hour, Weekday * Hour, isHoliday)
+   - Output: 90 Load Paths (24 hour) for next day
+4. Shaake Shuffle (db_ss_ar7, db_ss_arima, db_ss_rf) - *DSB*
+   - Input: All point based model, but one for every hour -> 24 Models
+   - Output: 90 Load Paths (24 hour) for next day
 
 # Results
 $n = 614$
@@ -50,6 +64,17 @@ crps_means <- read.csv("../plots/results/crps_means.csv")
 kable(crps_means, caption = "CRPS Means")
 ```
 
+**Ranking:**
+
+1. db_ss_arima
+2. db_qra
+3. db_ss_ar7
+4. db_ss_rf
+5. pb_arima
+6. pb_ar7
+7. pb_rf
+8. db_ar1
+9. db_hist_sim
 
 ## CRPS Plots
 
