@@ -45,6 +45,17 @@ for (i in file_names) {
     plot(crps_scores, main = i)
 }
 
+
+mean_crps <- data.frame(matrix(ncol = length(file_names), nrow = 1))
+colnames(mean_crps) <- file_names
+means <- c()
+for (element in crps) {
+    means <- c(means, mean(element))
+}
+mean_crps[1, ] <- means
+
+write.csv(mean_crps, file = "./plots/results/crps_means.csv", row.names = FALSE)
+
 # ------- VARIANCE -------
 # Create a boxplot from the variances list with rotated x-axis labels
 # Adjust the bottom margin to make space for the rotated labels
@@ -62,7 +73,7 @@ dm.test(crps[["db_ar1"]], crps[["db_hist_sim"]], alternative = "greater")
 
 # Iterate through the rows of db_hist_sim
 # Initialize an empty vector to store quantile_peak values
-model <- "db_qra"
+model <- "pb_rf"
 data <- get(model)
 quantiles <- c()
 
@@ -80,13 +91,14 @@ quantiles_df <- data.frame(quantiles = quantiles)
 
 # Create a histogram of quantiles using ggplot2
 ggplot(quantiles_df, aes(x = quantiles)) +
-    geom_histogram(binwidth = 0.07, fill = "blue", color = "black") +
+    geom_histogram(binwidth = 0.1, fill = "blue", color = "black") +
     labs(title = paste0("PIT ", model), x = "Quantiles", y = "Frequency") +
     theme_minimal()
 
 
 
 # ------------ Unconditional Coverage -----------
+# For one model
 model <- "db_hist_sim"
 data <- get(model)
 n <- nrow(data)
@@ -107,3 +119,45 @@ for (i in 1:nrow(data)) {
 coverage_rate <- hits / n
 print(paste0("PICP for ", c))
 print(coverage_rate)
+
+# For multiple models
+cr <- c(0.1, 0.25, 0.5, 0.75, 0.9)
+coverage_rates <- data.frame(matrix(ncol = length(file_names), nrow = 1))
+colnames(coverage_rates) <- file_names
+
+rates <- c()
+for (i in file_names) {
+    data <- get(i)
+    n <- nrow(data)
+    hits <- 0
+    c <- 0.1
+    for (i in 1:nrow(data)) {
+        peak <- data[i, 2]
+        dis <- as.numeric(data[i, 3:92])
+        # Compute the ECDF of dis
+        ecdf_dis <- ecdf(dis)
+        # Evaluate if it is a hit
+        if (ecdf_dis(peak) <= c) {
+            hits <- hits + 1
+        }
+    }
+    rates <- c(rates, (hits / n))
+}
+coverage_rates[1, ] <- rates
+
+rownames(coverage_rates) <- cr
+
+write.csv(coverage_rates, file = "./plots/results/uc.csv", row.names = TRUE)
+
+# -------- Kupiec Test -------
+# x ... Number of hits
+# n ... Total numbers of observation
+# c ... Coverage rate to test (0,1)
+# alpha ... For the test
+kupiec_test <- function(x, n, c, alpha) {
+    test <- -2 * log(((1 - c)^(x - n) * c^x) / ((1 - x / n)^(x - n) * (x / n)^x))
+
+    cr_value <- qchisq(1 - alpha, df = 1)
+
+    return(paste0(test >= cr_value, " | Critical value for alpha=", alpha, " is:", cr_value, " and the test statistic is: ", test))
+}

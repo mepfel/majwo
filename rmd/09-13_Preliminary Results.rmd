@@ -1,0 +1,88 @@
+---
+title: "Preliminary Results"
+author: "JW"
+date: "`r Sys.Date()`"
+output: html_document
+
+---
+# Updates
+
+- Log Transformation of load for the peak load ARX Model
+![](../plots/log-nolog-peak arx.png){width=80%}
+
+-  Shaake Shuffle (Grothe et al. 2023), Seite 10, $\sigma_{t,h} = 1$ im "raw-error" case - Warum?
+
+# Problem Statement
+
+<center>
+Predicting the energy peak demand for the next 24 hours!
+</center>
+
+![](../plots/data structures motivation.png){width=80%}
+
+We consider the data structure a *(DSA)* and the data structure B *(DSB)*
+
+# Models
+<center>
+$P_d = \hat{P_d} + \epsilon_d \Leftrightarrow F_{P_d}^{-1}(q) = \hat{P_d} + F_{\epsilon_t}^{-1}(q)$
+</center>
+
+## Point Based Models
+One year for training the model and 182 days to learn the error distribution.
+
+1. ARIMA (pb_arima) - *DSA*
+2. AR7 (pb_ar7) - *DSA*
+3. Random Forest (pb_rf) - *DSA*
+
+## Distribution Based  Models
+
+1. Historical Simulation (db_hist_sim) - *DSA, DSB*
+2. Quantile Regression Averaging (db_qra) - *DSA*
+3. Load Path Simulation - AR1 (db_ar1) - *DSB*
+4. Shaake Shuffle (db_ss_ar7, db_ss_arima, db_ss_rf - *DSB*
+
+# Results
+$n = 614$
+```{r echo=FALSE, results='axis'}
+library(knitr)
+# Read the crps means
+crps_means <- read.csv("../plots/results/crps_means.csv")
+kable(crps_means, caption = "CRPS Means")
+```
+
+
+## CRPS Plots
+
+![](../plots/results/plot.png){width=80%}
+![](../plots/results/plot(1).png){width=80%}
+![](../plots/results/plot(2).png){width=80%}
+![](../plots/results/plot(3).png){width=80%}
+![](../plots/results/plot(4).png){width=80%}
+![](../plots/results/plot(5).png){width=80%}
+![](../plots/results/plot(6).png){width=80%}
+![](../plots/results/plot(7).png){width=80%}
+![](../plots/results/plot(8).png){width=80%}
+
+## Variance of Peak Distribution
+
+![](../plots/results/plot(9).png){width=80%}
+
+## PIT
+
+![](../plots/results/plot(10).png){width=80%}
+![](../plots/results/plot(11).png){width=80%}
+![](../plots/results/plot(12).png){width=80%}
+![](../plots/results/plot(13).png){width=80%}
+![](../plots/results/plot(14).png){width=80%}
+![](../plots/results/plot(15).png){width=80%}
+![](../plots/results/plot(16).png){width=80%}
+![](../plots/results/plot(17).png){width=80%}
+![](../plots/results/plot(18).png){width=80%}
+
+## UC
+```{r echo=FALSE, results='axis'}
+library(knitr)
+# Read the us
+crps_means <- read.csv("../plots/results/uc.csv")
+kable(crps_means, caption = "Unconditional Coverage for several nominal coverages (NC)")
+```
