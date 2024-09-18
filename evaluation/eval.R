@@ -8,7 +8,7 @@ library(plotly)
 
 # Read in the peak distributions
 # List all CSV files in the folder
-file_paths <- list.files(path = "./evaluation/16-18", pattern = "*.csv", full.names = TRUE)
+file_paths <- list.files(path = "./evaluation/log", pattern = "*.csv", full.names = TRUE)
 # Remove the .csv extension from the basenames
 file_names <- tools::file_path_sans_ext(basename(file_paths))
 
