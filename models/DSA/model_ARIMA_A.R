@@ -121,7 +121,7 @@ store$yhat <- predictions$y_hat
 # Calculating residuals for the training part
 store$residuals <- store$y - store$yhat
 
-write.csv(store, file = "./data/forecasts/peaks_16-18_model-arima(1,1,1).csv", row.names = FALSE)
+write.csv(store, file = "./data/forecasts/peaks_16-18_model-arimax.csv", row.names = FALSE)
 
 
 
