@@ -20,7 +20,9 @@ data <- energy_load |>
     filter(year(date) >= 2015) |>
     mutate(
         load_origin = load,
-        load = log(load)
+        load = log(load),
+        p1 = sin(2 * pi * yday(date) / 366),
+        p2 = cos(2 * pi * yday(date) / 366)
     )
 
 # Create weekday dummy variables
@@ -112,7 +114,7 @@ predict_arima <- function(data, d) {
     # Use One year for training
     train <- data[(24 * d - 23):(((364 + d) * 24)), ]
 
-    x_train <- c("is_holiday", "DoW_2", "DoW_3", "DoW_4", "DoW_5", "DoW_6", "DoW_7")
+    x_train <- c("is_holiday", "DoW_2", "DoW_3", "DoW_4", "DoW_5", "DoW_6", "DoW_7", "p1", "p2")
 
     # For every hour, one model
     for (i in seq(0, 23)) {

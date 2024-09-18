@@ -32,6 +32,8 @@ data <- data |>
         Y_d_5_h = lag(load, 5 * 24), # lag by 120 hours
         Y_d_6_h = lag(load, 6 * 24), # lag by 144 hours
         Y_d_7_h = lag(load, 7 * 24), # lag by 168 hours
+        p1 = sin(2 * pi * yday(date) / 366),
+        p2 = cos(2 * pi * yday(date) / 366)
     )
 
 # Remove rows with NA values created by lagging
@@ -93,7 +95,7 @@ predict_expert <- function(data, d) {
 
     # ------- TRAINING ----------
     # Formula for the regression
-    formula <- load ~ Y_d_1_h + Y_d_3_h + weekday_int + is_holiday
+    formula <- load ~ Y_d_1_h + Y_d_2_h + Y_d_3_h + Y_d_4_h + Y_d_5_h + Y_d_6_h + Y_d_7_h + weekday_int + is_holiday + p1 + p2
 
     # Fit the regression model
     # Use One year for training

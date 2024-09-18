@@ -79,10 +79,12 @@ predict_ar7 <- function(data, d) {
             Y_5 = lag(load, 5),
             Y_6 = lag(load, 6),
             Y_7 = lag(load, 7),
+            p1 = sin(2 * pi * yday(date) / 366),
+            p2 = cos(2 * pi * yday(date) / 366)
         )
     data <- na.omit(data)
 
-    formula <- load ~ Y_1 + Y_2 + Y_3 + Y_4 + Y_5 + Y_6 + Y_7 + weekday_int + is_holiday
+    formula <- load ~ Y_1 + Y_2 + Y_3 + Y_4 + Y_5 + Y_6 + Y_7 + weekday_int + is_holiday + p1 + p2
 
     # Train/Test Split
     train <- data[d:(364 + d), ]

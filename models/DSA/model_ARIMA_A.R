@@ -10,7 +10,11 @@ holidays <- read.csv("./data/holidays_DE_15-24.csv") |>
 # --- Load the energy data ----
 energy_load <- read.csv("./data/load_15-24.csv") |>
     mutate_at(c("hour_int", "weekday_int", "month_int"), as.factor) |>
-    mutate(is_holiday = if_else(as.Date(date) %in% holidays$Date, 1, 0))
+    mutate(is_holiday = if_else(as.Date(date) %in% holidays$Date, 1, 0)) |>
+    mutate(
+        p1 = sin(2 * pi * yday(date) / 366),
+        p2 = cos(2 * pi * yday(date) / 366)
+    )
 
 energy_load$date <- as.POSIXct(energy_load$date, tz = "UTC")
 
@@ -71,7 +75,7 @@ predict_arma <- function(data, d) {
 
     # ------- TRAINING ----------
     # Set up the X matrix for training
-    x_train <- c("is_holiday", "DoW_2", "DoW_3", "DoW_4", "DoW_5", "DoW_6", "DoW_7")
+    x_train <- c("is_holiday", "DoW_2", "DoW_3", "DoW_4", "DoW_5", "DoW_6", "DoW_7", "p1", "p2")
     x_reg <- train |>
         select(all_of(x_train)) |>
         as.matrix()
