@@ -70,7 +70,7 @@ for (i in 1:n) {
 }
 
 # Create the formula string
-formula <- as.formula(paste("y ~", paste(c(paste0("x_", 1:21), "p1", "p2", "hour_int", "weekday_int"), collapse = " + ")))
+formula <- as.formula(paste("y ~", paste(c(paste0("x_", 1:21), "p1", "p2", "weekday_int"), collapse = " + ")))
 
 pred_length <- 1000
 predictions <- data.frame(matrix(ncol = 52, nrow = 0))
