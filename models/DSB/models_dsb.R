@@ -1,5 +1,6 @@
 library(tidyverse)
 library(forecast)
+library(randomForest)
 
 # ---- Load the data ----
 # For the holidays
@@ -40,7 +41,6 @@ data <- energy_load |>
         lag_21 = lag(load, 21 * 24)
     ) |>
     select(-month_int, -working_day)
-data <- na.omit(data)
 
 # Remove rows with NA values created by lagging
 data <- na.omit(data)
@@ -105,8 +105,8 @@ predict_arima <- function(data, d) {
 }
 
 # Run the predictons for some days
-predictions <- data.frame(matrix(ncol = 15, nrow = 0))
-pred_length <- 1000 # in days
+predictions <- data.frame()
+pred_length <- 1400 # in days
 for (i in 1:pred_length) {
     print(i)
     value <- predict_arima(data, i)
@@ -128,7 +128,7 @@ store$yhat <- predictions$y_hat
 # Calculating residuals for the training part
 store$residuals <- store$y - store$yhat
 
-write.csv(store, file = "./data/forecasts/loads_16-18_model-arima-24.csv", row.names = FALSE)
+write.csv(store, file = "./data/forecasts/final/loads_model_arimax.csv", row.names = FALSE)
 
 #####################
 # ----- ARX ------- #
@@ -175,8 +175,8 @@ predict_expert <- function(data, d) {
 }
 
 # Run the predictons for some days
-predictions <- data.frame(matrix(ncol = 15, nrow = 0))
-pred_length <- 1000 # in days
+predictions <- data.frame()
+pred_length <- 1400 # in days
 for (i in 1:pred_length) {
     print(i)
     value <- predict_expert(data, i)
@@ -198,7 +198,7 @@ store$yhat <- predictions$y_hat
 # Calculating residuals for the training part
 store$residuals <- store$y - store$yhat
 
-write.csv(store, file = "./data/forecasts/loads_16-18_model-arx.csv", row.names = FALSE)
+write.csv(store, file = "./data/forecasts/final/loads_model_arx.csv", row.names = FALSE)
 
 
 #####################
@@ -206,7 +206,7 @@ write.csv(store, file = "./data/forecasts/loads_16-18_model-arx.csv", row.names 
 #####################
 
 # Data Preprocessing
-n <- 8760 * 4
+n <- (1400 + 365) * 24
 data <- data[(1:n), ]
 
 # Loop through each row index of data
@@ -233,19 +233,30 @@ for (i in 1:n) {
 }
 
 # Create the formula string
-formula <- as.formula(paste("y ~", paste(c(paste0("x_", 1:21), "p1", "p2", "hour_int", "weekday_int"), collapse = " + ")))
+formula <- as.formula(paste("y ~", paste(c(paste0("x_", 1:21), "p1", "p2", "hour_int", "weekday_int", "is_holiday"), collapse = " + ")))
 
-pred_length <- 1460
+pred_length <- 1400
 predictions <- data.frame(matrix(ncol = 52, nrow = 0))
 for (d in 1:pred_length) {
     print(d)
     train <- data[(24 * d - 23):(((364 + d) * 24)), ]
     test <- data[(24 * d + 365 * 24 - 23):(24 * d + 365 * 24), ]
-    rf <- randomForest(formula, data = train, ntree = 100)
-    y_hat <- as.numeric(predict(rf, test))
-    test$load_p <- y_hat * test$std + test$mean
+
+    # For every hour, one model
+    for (i in seq(0, 23)) {
+        print(i)
+        train_h <- train |>
+            filter(hour(date) == i)
+
+        rf <- randomForest(formula, data = train_h, ntree = 100)
+
+        y_hat <- as.numeric(predict(rf, test[(i + 1), ]))
+        test[(i + 1), "load_p"] <- y_hat * test[(i + 1), "std"] + test[(i + 1), "mean"]
+    }
+
     predictions <- rbind(predictions, test)
-    if (d %% 500) {
+
+    if (d %% 500 == 0) {
         write.csv(predictions, file = "./data/forecasts/loads_16-19_model-rf-CACHE.csv", row.names = FALSE)
     }
 }
@@ -265,4 +276,4 @@ store$yhat <- predictions$load_p
 # Calculating residuals for the training part
 store$residuals <- store$y - store$yhat
 
-write.csv(store, file = "./data/forecasts/loads_16-18_model-rf.csv", row.names = FALSE)
+write.csv(store, file = "./data/forecasts/final/loads_model_rf.csv", row.names = FALSE)

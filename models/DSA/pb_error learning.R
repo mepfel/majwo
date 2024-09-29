@@ -4,7 +4,7 @@ library(scoringRules)
 
 # Load the model data
 # Change the name to change the model
-model <- read.csv("./data/forecasts/peaks_16-18_model-rf.csv")
+model <- read.csv("./data/forecasts/final/peaks_model_rf.csv")
 model$ds <- as.POSIXct(model$ds, tz = "UTC")
 
 # specify the length for the error learning phase in days

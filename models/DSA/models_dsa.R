@@ -118,7 +118,7 @@ store$yhat <- predictions$y_hat
 # Calculating residuals for the training part
 store$residuals <- store$y - store$yhat
 
-write.csv(store, file = "./data/forecasts/thesis/peaks_model_arimax.csv", row.names = FALSE)
+write.csv(store, file = "./data/forecasts/final/peaks_model_arimax.csv", row.names = FALSE)
 
 
 #####################
@@ -178,7 +178,7 @@ store$yhat <- predictions$y_hat
 # Calculating residuals for the training part
 store$residuals <- store$y - store$yhat
 
-write.csv(store, file = "./data/forecasts/thesis/peaks_model_arx.csv", row.names = FALSE)
+write.csv(store, file = "./data/forecasts/final/peaks_model_arx.csv", row.names = FALSE)
 
 
 #####################
@@ -186,7 +186,7 @@ write.csv(store, file = "./data/forecasts/thesis/peaks_model_arx.csv", row.names
 #####################
 
 # Data Preprocessing
-n <- 400
+n <- 1400 + 365
 data <- data[(1:n), ]
 
 # Loop through each row index of data
@@ -215,7 +215,7 @@ for (i in 1:n) {
 # Create the formula string
 formula <- as.formula(paste("y ~", paste(c(paste0("x_", 1:21), "p1", "p2", "weekday_int", "is_holiday"), collapse = " + ")))
 
-pred_length <- 10
+pred_length <- 1400
 predictions <- data.frame()
 for (d in 1:pred_length) {
     print(d)
@@ -242,4 +242,4 @@ store$yhat <- predictions$load_p
 # Calculating residuals for the training part
 store$residuals <- store$y - store$yhat
 
-write.csv(store, file = "./data/forecasts/thesis/peaks_model-rf.csv", row.names = FALSE)
+write.csv(store, file = "./data/forecasts/final/peaks_model_rf.csv", row.names = FALSE)
