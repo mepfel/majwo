@@ -5,9 +5,9 @@ library(quantreg)
 
 # ---- Getting the data ----
 
-model1 <- read.csv("./data/forecasts/peaks_16-18_model-ar7.csv")
-model2 <- read.csv("./data/forecasts/peaks_16-18_model-arima(1,1,1).csv")
-model3 <- read.csv("./data/forecasts/peaks_16-18_model-rf.csv")
+model1 <- read.csv("./data/forecasts/final/peaks_model_arx.csv")
+model2 <- read.csv("./data/forecasts/final/peaks_model_arimax.csv")
+model3 <- read.csv("./data/forecasts/final/peaks_model_rf.csv")
 
 # Merge the data frames based on the ds and y columns and select only the yhat columns
 data <- model1 |>
@@ -16,7 +16,7 @@ data <- model1 |>
     select(ds, y, x1 = yhat_model1, x2 = yhat_model2, x3 = yhat)
 
 # length of the calibration period
-clength <- 182
+clength <- 365
 
 
 getDIS_qra <- function(d, data) {
@@ -61,7 +61,7 @@ getDIS_qra <- function(d, data) {
 length(data[, "y"]) - clength
 
 # specify the length for rolling iterations in days
-len_test <- 797
+len_test <- 1035
 
 peak_dis <- data.frame()
 for (d in seq(1, len_test)) {
@@ -69,7 +69,7 @@ for (d in seq(1, len_test)) {
     peak_dis <- rbind(peak_dis, dis)
 }
 
-write.csv(peak_dis, file = "./evaluation/db_qra.csv", row.names = FALSE)
+write.csv(peak_dis, file = "./evaluation/dsa_qra.csv", row.names = FALSE)
 
 # get the crps score
 crps_scores <- crps_sample(peak_dis$peak, as.matrix(peak_dis[, 3:ncol(peak_dis)]))

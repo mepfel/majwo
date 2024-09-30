@@ -1,5 +1,4 @@
 library(tidyverse)
-library(forecast)
 library(randomForest)
 
 # ---- Load the data ----
@@ -176,7 +175,7 @@ predict_expert <- function(data, d) {
 
 # Run the predictons for some days
 predictions <- data.frame()
-pred_length <- 1400 # in days
+pred_length <- 2 # in days
 for (i in 1:pred_length) {
     print(i)
     value <- predict_expert(data, i)
@@ -233,7 +232,7 @@ for (i in 1:n) {
 }
 
 # Create the formula string
-formula <- as.formula(paste("y ~", paste(c(paste0("x_", 1:21), "p1", "p2", "hour_int", "weekday_int", "is_holiday"), collapse = " + ")))
+formula <- as.formula(paste("y ~", paste(c(paste0("x_", 1:21), "p1", "p2", "weekday_int", "is_holiday"), collapse = " + ")))
 
 pred_length <- 1400
 predictions <- data.frame(matrix(ncol = 52, nrow = 0))

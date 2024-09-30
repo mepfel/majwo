@@ -5,7 +5,12 @@ library(copula)
 
 # Load the model data
 
-model <- read.csv("./data/forecasts/loads_16-18_model-rf.csv")
+model <- read.csv("./data/forecasts/final/loads_model_rf.csv")
+
+# Check if hour 0 is missing and then add it
+# model$ds <- ifelse(grepl("^\\d{4}-\\d{2}-\\d{2}$", model$ds), paste(model$ds, "00:00:00"), model$ds)
+# write.csv(model, "./data/forecasts/final/loads_model_rf.csv", row.names = FALSE)
+
 model$ds <- as.POSIXct(model$ds, tz = "UTC")
 
 
@@ -136,7 +141,7 @@ getDIS_ss <- function(d, data) {
 # max possible length
 length(model$y) / 24 - length
 # specify the length for rolling iterations in days
-len_test <- 635
+len_test <- 1035
 
 peak_dis <- data.frame()
 for (d in seq(1, len_test)) {
@@ -145,7 +150,7 @@ for (d in seq(1, len_test)) {
 }
 
 
-write.csv(peak_dis, file = "./evaluation/db_ss-rf-16-18.csv", row.names = FALSE)
+write.csv(peak_dis, file = "./evaluation/dsb_ss_rf.csv", row.names = FALSE)
 
 # get the crps score
 crps_scores <- crps_sample(peak_dis$peak, as.matrix(peak_dis[, 3:ncol(peak_dis)]))

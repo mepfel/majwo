@@ -2,6 +2,7 @@ library(tidyverse)
 library(forecast)
 library(scoringRules)
 library(ggplot2)
+library(reshape2)
 library(knitr)
 # R Script for evaluation
 
@@ -13,7 +14,7 @@ q_distance <- function(dis) {
 
 # Read in the peak distributions
 # List all CSV files in the folder
-file_paths <- list.files(path = "./evaluation/log", pattern = "*.csv", full.names = TRUE)
+file_paths <- list.files(path = "./evaluation/final", pattern = "*.csv", full.names = TRUE)
 # Remove the .csv extension from the basenames
 file_names <- tools::file_path_sans_ext(basename(file_paths))
 
@@ -64,23 +65,58 @@ kable(t(mean_crps), "latex")
 
 
 # ------- Quantile Distances -------
-# Create a boxplot from the variances list with rotated x-axis labels
-# Adjust the bottom margin to make space for the rotated labels
-par(mar = c(8, 4, 4, 2) + 0.1)
-boxplot(quant_distance[-9], main = "Quantile distances (0.75-0.25) of peak distribution", xaxt = "n")
-axis(1, at = 1:(length(file_names) - 1), labels = FALSE)
-mtext(side = 1, at = 1:(length(file_names) - 1), text = file_names[-9], line = 1, las = 2)
+# Convert quant_distance to a data frame
+quant_distance_df <- data.frame(
+    file_names = rep(file_names[-9], each = length(quant_distance[[1]])),
+    distance = unlist(quant_distance[-9])
+)
+
+# Create the boxplot using ggplot2
+ggplot(quant_distance_df, aes(x = file_names, y = distance)) +
+    geom_boxplot() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1), text = element_text(size = 16)) +
+    labs(
+        x = "Models",
+        y = "Quantile Distance (0.75 - 0.25)"
+    )
 
 # -------- DM Test ---------
 # H1: method 2 is better than method 1
-dm.test(crps[["db_ar1"]], crps[["db_hist_sim"]], alternative = "greater")
+dm.test(crps[["hist_sim"]], crps[["hist_sim"]], alternative = "greater")
 
+# Assuming crps is already defined
+n <- length(crps)
+results <- matrix(NA, n, n, dimnames = list(names(crps), names(crps)))
+
+for (i in 1:n) {
+    for (j in 1:n) {
+        if (i != j) {
+            test_result <- dm.test(crps[[i]], crps[[j]], alternative = "greater")
+            results[i, j] <- test_result$p.value
+        }
+    }
+}
+
+# Plot a heatmap
+melted_results <- melt(results)
+# Create the heatmap
+ggplot(data = melted_results, aes(x = Var1, y = Var2, fill = value)) +
+    geom_tile() +
+    scale_fill_gradient(low = "#efefef", high = "#3098de") +
+    geom_text(aes(label = round(value, 2)), color = "black", size = 5) +
+    labs(
+        x = "Method 1",
+        y = "Method 2",
+        fill = "p-value"
+    ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1), text = element_text(size = 16))
 
 # ----------- PIT ----------
 
 # Iterate through the rows of db_hist_sim
 # Initialize an empty vector to store quantile_peak values
-model <- "dsb_ss_rf"
+model <- "dsb_ss_arimax"
 data <- get(model)
 quantiles <- c()
 
@@ -105,7 +141,8 @@ ggplot(quantiles_df, aes(sample = quantiles)) +
         x = "Theoretical Quantiles",
         y = "Sample Quantiles"
     ) +
-    theme_minimal()
+    theme_minimal() +
+    theme(text = element_text(size = 20))
 
 # Create a histogram of quantiles using ggplot2
 ggplot(quantiles_df, aes(x = quantiles)) +
@@ -139,7 +176,7 @@ print(paste0("PICP for ", c))
 print(coverage_rate)
 
 # For multiple models
-cr <- c(0.25, 0.5, 0.75)
+cr <- c(0.05, 0.25, 0.5, 0.75, 0.95)
 coverage_rates <- data.frame(matrix(ncol = length(file_names), nrow = 1))
 colnames(coverage_rates) <- file_names
 
@@ -170,9 +207,12 @@ rownames(coverage_rates) <- cr
 # Round every element in coverage_rates to 4 decimal places
 coverage_rates <- round(coverage_rates, 4)
 # Calculate ACE
-coverage_rates[1, ] <- coverage_rates[1, ] - 0.25
-coverage_rates[2, ] <- coverage_rates[2, ] - 0.5
-coverage_rates[3, ] <- coverage_rates[3, ] - 0.75
+coverage_rates[1, ] <- coverage_rates[1, ] - 0.05
+coverage_rates[2, ] <- coverage_rates[2, ] - 0.25
+coverage_rates[3, ] <- coverage_rates[3, ] - 0.5
+coverage_rates[4, ] <- coverage_rates[4, ] - 0.75
+coverage_rates[5, ] <- coverage_rates[5, ] - 0.95
+
 
 kable(t(coverage_rates), "latex")
 

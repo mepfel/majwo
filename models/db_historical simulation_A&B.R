@@ -26,10 +26,10 @@ getDIS_rolling <- function(d, data) {
 }
 
 # specify the length for testing period in days
-len_test <- 1000
+len_test <- 1035
 
-# specify the start day (index 366 is 01.01.2016)
-start <- 366
+# specify the start day (index 366 is 01.01.2016, index 751 is 20.01.2017)
+start <- 751
 d <- start
 
 peak_dis <- data.frame()
@@ -40,7 +40,7 @@ while (d < (len_test + start)) {
     d <- d + 1
 }
 
-write.csv(peak_dis, file = "./evaluation/db_hist-sim-16-18.csv", row.names = FALSE)
+write.csv(peak_dis, file = "./evaluation/hist_sim.csv", row.names = FALSE)
 
 
 # get the crps score

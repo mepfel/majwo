@@ -1,5 +1,4 @@
 library(tidyverse)
-library(forecast)
 library(randomForest)
 
 # ---- Load the data ----

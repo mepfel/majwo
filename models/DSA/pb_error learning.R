@@ -8,7 +8,7 @@ model <- read.csv("./data/forecasts/final/peaks_model_rf.csv")
 model$ds <- as.POSIXct(model$ds, tz = "UTC")
 
 # specify the length for the error learning phase in days
-length <- 182 # According to recent advantages paper...
+length <- 365 # According to recent advantages paper...
 
 
 # Daten mit übergeben!!!
@@ -74,7 +74,7 @@ length(model[, "residuals"]) - length
 
 
 # specify the length for testing period in days
-len_test <- 818
+len_test <- 1035
 
 peak_dis <- data.frame()
 for (d in seq(1, len_test)) {
@@ -82,7 +82,7 @@ for (d in seq(1, len_test)) {
     peak_dis <- rbind(peak_dis, dis)
 }
 
-write.csv(peak_dis, file = "./evaluation/pb_error-rf-16-18.csv", row.names = FALSE)
+write.csv(peak_dis, file = "./evaluation/dsa_error_rf.csv", row.names = FALSE)
 
 
 # get the crps score

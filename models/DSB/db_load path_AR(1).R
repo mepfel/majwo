@@ -133,11 +133,7 @@ length <- 364
 getDIS_ar1 <- function(d, data) {
     print(d)
     # Getting the train data: starting from day i get the next 365 days
-    df_train <- data[((d - 1) * 24 + 1):((length + d) * 24), ] |>
-        mutate(
-            load_origin = load,
-            load = log(load)
-        )
+    df_train <- data[((d - 1) * 24 + 1):((length + d) * 24), ]
     # Get the next 24 hours after the training period
     df_test <- data[(((d + length) * 24) + 1):((d + length + 1) * 24), ]
 
@@ -175,7 +171,7 @@ getDIS_ar1 <- function(d, data) {
     # Create the mean prediction from the AR-1 model for the next 24 hours
     y_mean_24 <- as.numeric(tail(y, 1)[2]) * rho^(1:24)
     # Get the base component for the 24 hours from the seosonality model
-    logload_mean_24 <- as.numeric(predict(statio, df_test))
+    base_mean_24 <- as.numeric(predict(statio, df_test))
 
     for (i in 1:m) {
         # Sample from the multivariate normal distribution
@@ -185,13 +181,9 @@ getDIS_ar1 <- function(d, data) {
         y_sample_24 <- y_mean_24 + error_samples
 
         # Add the y sample
-        logload_pred_24 <- logload_mean_24 + y_sample_24
+        pred_24 <- base_mean_24 + y_sample_24
 
-        # Transformation
-        # Hier eventuell noch anpassen wegen log-trafo -> Mean und Variance
-        loads_pred_24 <- exp(logload_pred_24)
-
-        multivariate_forecast[i, ] <- loads_pred_24
+        multivariate_forecast[i, ] <- pred_24
     }
 
     print("Prediction DONE...")
@@ -213,7 +205,7 @@ getDIS_ar1 <- function(d, data) {
 
 
 # specify the length for rolling iterations in days
-len_test <- 1000
+len_test <- 1400
 
 peak_dis <- data.frame()
 for (d in seq(1, len_test)) {
@@ -221,7 +213,7 @@ for (d in seq(1, len_test)) {
     peak_dis <- rbind(peak_dis, dis)
 }
 
-write.csv(peak_dis, file = "./evaluation/db_ar1.csv", row.names = FALSE)
+write.csv(peak_dis, file = "./evaluation/dsb_ar1.csv", row.names = FALSE)
 
 # get the crps score
 crps_scores <- crps_sample(peak_dis$peak, as.matrix(peak_dis[, 3:ncol(peak_dis)]))
