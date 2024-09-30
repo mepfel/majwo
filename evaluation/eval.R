@@ -14,7 +14,7 @@ q_distance <- function(dis) {
 
 # Read in the peak distributions
 # List all CSV files in the folder
-file_paths <- list.files(path = "./evaluation/final", pattern = "*.csv", full.names = TRUE)
+file_paths <- list.files(path = "./evaluation/hours", pattern = "*.csv", full.names = TRUE)
 # Remove the .csv extension from the basenames
 file_names <- tools::file_path_sans_ext(basename(file_paths))
 
@@ -63,6 +63,30 @@ mean_crps[1, ] <- means
 # Plain latex output
 kable(t(mean_crps), "latex")
 
+# ------------- CRPS | Boxplot --------
+# get the crps score and the quant_distance from the peak distributions
+crps_series <- data.frame(date = filtered_model$ds)
+
+for (i in file_names) {
+    peak_dis <- get(i)
+    peaks <- peak_dis$peak
+    dis <- as.matrix(peak_dis[, 3:ncol(peak_dis)])
+    crps_scores <- crps_sample(peaks, dis)
+    crps_series[[i]] <- crps_scores
+}
+
+# Reshape crps_series from wide to long format
+crps_long <- crps_series %>%
+    pivot_longer(cols = -date, names_to = "model", values_to = "crps_score")
+
+# General Boxplot
+ggplot(crps_long, aes(x = model, y = crps_score)) +
+    geom_boxplot() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1), text = element_text(size = 16)) +
+    labs(
+        x = "Models",
+        y = "CRPS Score"
+    )
 
 # ------- Quantile Distances -------
 # Convert quant_distance to a data frame
@@ -113,36 +137,50 @@ ggplot(data = melted_results, aes(x = Var1, y = Var2, fill = value)) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1), text = element_text(size = 16))
 
 # ----------- PIT ----------
+# Define the models
+models <- c("dsb_ar1")
+quantiles_list <- list()
 
-# Iterate through the rows of db_hist_sim
-# Initialize an empty vector to store quantile_peak values
-model <- "dsb_ss_arimax"
-data <- get(model)
-quantiles <- c()
+# Iterate through the models
+for (model in models) {
+    data <- get(model)
+    quantiles <- c()
 
-for (i in 1:nrow(data)) {
-    peak <- data[i, 2]
-    dis <- as.numeric(data[i, 3:92])
-    # Compute the ECDF of dis
-    ecdf_dis <- ecdf(dis)
-    # Calculate the quantile of peak
-    quantiles <- c(quantiles, ecdf_dis(peak))
+    for (i in 1:nrow(data)) {
+        peak <- data[i, 2]
+        dis <- as.numeric(data[i, 3:92])
+        # Compute the ECDF of dis
+        ecdf_dis <- ecdf(dis)
+        # Calculate the quantile of peak
+        quantiles <- c(quantiles, ecdf_dis(peak))
+    }
+
+    # Store the quantiles in the list
+    quantiles_list[[model]] <- quantiles
 }
 
-# Convert the quantiles vector to a data frame
-quantiles_df <- data.frame(quantiles = quantiles)
+# Combine the quantiles into a single data frame
+quantiles_df <- data.frame(
+    quantiles = unlist(quantiles_list),
+    model = rep(models, times = sapply(quantiles_list, length))
+)
 
 # Create a QQ-Plot of the quantiles compared to the uniform distribution
-ggplot(quantiles_df, aes(sample = quantiles)) +
-    stat_qq(distribution = stats::qunif) +
-    stat_qq_line(distribution = stats::qunif) +
+ggplot(quantiles_df, aes(sample = quantiles, color = model)) +
+    stat_qq(distribution = stats::qunif) + # color = "#1FBFC3"
+    geom_abline(slope = 1, intercept = 0) + # Add identity line
     labs(
-        title = paste0("QQ Plot of ", model, " Quantiles vs Uniform Distribution"),
         x = "Theoretical Quantiles",
         y = "Sample Quantiles"
     ) +
     theme_minimal() +
-    theme(text = element_text(size = 20))
+    theme(
+        text = element_text(size = 15),
+        legend.position = c(0.97, 0.05), # Position legend in bottom right corner
+        legend.justification = c(1, 0), # Justify legend to bottom right corner,
+        legend.title = element_blank(),
+        aspect.ratio = 1
+    )
 
 # Create a histogram of quantiles using ggplot2
 ggplot(quantiles_df, aes(x = quantiles)) +
@@ -223,10 +261,63 @@ write.csv(coverage_rates, file = "./plots/results/uc.csv", row.names = TRUE)
 # n ... Total numbers of observation
 # c ... Coverage rate to test (0,1)
 # alpha ... For the test
-kupiec_test <- function(x, n, c, alpha) {
-    test <- -2 * log(((1 - c)^(x - n) * c^x) / ((1 - x / n)^(x - n) * (x / n)^x))
+kupiec_test <- function(x, n, c, alpha = 0.05) {
+    test <- -2 * log(((1 - c)^(n - x) * c^x) / ((1 - x / n)^(n - x) * (x / n)^x))
 
-    cr_value <- qchisq(1 - alpha, df = 1)
-
-    return(paste0(test >= cr_value, " | Critical value for alpha=", alpha, " is:", cr_value, " and the test statistic is: ", test))
+    # Critical value
+    # cr_value <- qchisq(1 - alpha, df = 1)
+    return(test)
 }
+
+# For multiple models - Kupiec Test
+cr <- c(0.05, 0.25, 0.5, 0.75, 0.95)
+coverages <- data.frame(matrix(ncol = length(file_names), nrow = 1))
+colnames(coverages) <- file_names
+
+for (j in 1:length(cr)) {
+    rates <- c()
+    c <- cr[j]
+    print(c)
+    for (i in file_names) {
+        data <- get(i)
+        n <- nrow(data)
+        hits <- 0
+        for (i in 1:nrow(data)) {
+            peak <- data[i, 2]
+            dis <- as.numeric(data[i, 3:92])
+            # Compute the ECDF of dis
+            ecdf_dis <- ecdf(dis)
+            # Evaluate if it is a hit
+            if (ecdf_dis(peak) <= c) {
+                hits <- hits + 1
+            }
+        }
+        rates <- c(rates, hits)
+    }
+    coverages[j, ] <- rates
+}
+rownames(coverages) <- cr
+
+coverage_test <- data.frame(matrix(ncol = length(file_names), nrow = length(cr)))
+colnames(coverage_test) <- file_names
+rownames(coverage_test) <- cr
+
+for (c in cr) {
+    for (j in 1:length(file_names)) {
+        coverage_test[paste0(c), j] <- kupiec_test(coverages[paste0(c), j], n, c)
+    }
+}
+coverage_test$cr <- as.factor(cr)
+# Melt the data frame to long format
+coverage_test_long <- pivot_longer(coverage_test, cols = -cr, names_to = "model", values_to = "value")
+# Create the scatter plot
+ggplot(coverage_test_long, aes(x = model, y = value, shape = cr)) +
+    geom_point(size = 2.5) +
+    geom_hline(yintercept = qchisq(1 - 0.05, df = 1), linetype = "dashed", color = "red") +
+    labs(x = "Model", y = "Test Statistic", shape = "CR") +
+    scale_shape_manual(values = c(6, 0, 5, 1, 2)) +
+    theme_minimal() +
+    theme(
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        text = element_text(size = 15),
+    )
