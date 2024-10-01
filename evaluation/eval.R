@@ -14,7 +14,7 @@ q_distance <- function(dis) {
 
 # Read in the peak distributions
 # List all CSV files in the folder
-file_paths <- list.files(path = "./evaluation/hours", pattern = "*.csv", full.names = TRUE)
+file_paths <- list.files(path = "./evaluation/final", pattern = "*.csv", full.names = TRUE)
 # Remove the .csv extension from the basenames
 file_names <- tools::file_path_sans_ext(basename(file_paths))
 
@@ -167,7 +167,7 @@ quantiles_df <- data.frame(
 
 # Create a QQ-Plot of the quantiles compared to the uniform distribution
 ggplot(quantiles_df, aes(sample = quantiles, color = model)) +
-    stat_qq(distribution = stats::qunif) + # color = "#1FBFC3"
+    stat_qq(distribution = stats::qunif) + # color = "#1FBFC3" color_red = "#F6766F"
     geom_abline(slope = 1, intercept = 0) + # Add identity line
     labs(
         x = "Theoretical Quantiles",
@@ -213,7 +213,7 @@ coverage_rate <- hits / n
 print(paste0("PICP for ", c))
 print(coverage_rate)
 
-# For multiple models
+# ----- For multiple models ------
 cr <- c(0.05, 0.25, 0.5, 0.75, 0.95)
 coverage_rates <- data.frame(matrix(ncol = length(file_names), nrow = 1))
 colnames(coverage_rates) <- file_names
@@ -251,10 +251,48 @@ coverage_rates[3, ] <- coverage_rates[3, ] - 0.5
 coverage_rates[4, ] <- coverage_rates[4, ] - 0.75
 coverage_rates[5, ] <- coverage_rates[5, ] - 0.95
 
-
 kable(t(coverage_rates), "latex")
 
 write.csv(coverage_rates, file = "./plots/results/uc.csv", row.names = TRUE)
+
+# Make a plot of the coverage rates
+coverage_rates <- coverage_rates * 100
+
+# Assuming coverage_rates is a matrix or data frame
+# Convert to data frame if necessary
+coverage_rates_df <- as.data.frame(coverage_rates)
+
+# Add rownames as a column to represent nominal coverages
+coverage_rates_df$NominalCoverage <- rownames(coverage_rates_df * 100)
+
+# Reshape the data frame to long format
+coverage_rates_long <- gather(coverage_rates_df, key = "Model", value = "CoverageRate", -NominalCoverage)
+
+# Convert NominalCoverage to a factor for better readability
+coverage_rates_long$NominalCoverage <- factor(coverage_rates_long$NominalCoverage, levels = unique(coverage_rates_long$NominalCoverage))
+
+# Define custom colors for the models
+custom_colors <- c(
+    "#00c800", "#00b35d", "#009a82", "#007f8c",
+    "#c80000", "#bf004c", "#972677", "#604285", "grey"
+)
+
+# Create the bar chart with facet_wrap
+ggplot(coverage_rates_long, aes(x = Model, y = CoverageRate, fill = Model)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    labs(y = "ACE in %", fill = NULL) +
+    theme_minimal() +
+    facet_wrap(~NominalCoverage, scales = "fixed", nrow = 1) +
+    theme(
+        aspect.ratio = 1,
+        axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        strip.text = element_text(face = "bold"),
+        text = element_text(size = 15),
+        panel.border = element_rect(color = "black", fill = NA, size = 1),
+        legend.position = "bottom"
+    ) +
+    scale_fill_manual(values = custom_colors)
 
 # -------- Kupiec Test -------
 # x ... Number of hits
