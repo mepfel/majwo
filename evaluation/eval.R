@@ -273,8 +273,8 @@ coverage_rates_long$NominalCoverage <- factor(coverage_rates_long$NominalCoverag
 
 # Define custom colors for the models
 custom_colors <- c(
-    "#00c800", "#00b35d", "#009a82", "#007f8c",
-    "#c80000", "#bf004c", "#972677", "#604285", "grey"
+    "#c80000", "#bf004c", "#972677", "#604285",
+    "#00c800", "#00b35d", "#009a82", "#007f8c","grey"
 )
 
 # Create the bar chart with facet_wrap
