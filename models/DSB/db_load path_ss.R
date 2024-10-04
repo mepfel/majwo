@@ -5,7 +5,9 @@ library(copula)
 
 # Load the model data
 
-model <- read.csv("./data/forecasts/final/loads_model_rf.csv")
+model <- read.csv("./data/forecasts/AT/loads_model_rf.csv")
+# model <- read.csv("./data/forecasts/AT/loads_model_arx.csv")
+# model <- read.csv("./data/forecasts/AT/loads_model_arimax.csv")
 
 # Check if hour 0 is missing and then add it
 # model$ds <- ifelse(grepl("^\\d{4}-\\d{2}-\\d{2}$", model$ds), paste(model$ds, "00:00:00"), model$ds)

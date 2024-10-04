@@ -59,13 +59,13 @@ for (element in crps) {
 }
 mean_crps[1, ] <- means
 
-# write.csv(mean_crps, file = "./plots/results/crps_means.csv", row.names = FALSE)
+write.csv(mean_crps, file = "./plots/results/crps_means_DE.csv", row.names = FALSE)
 # Plain latex output
 kable(t(mean_crps), "latex")
 
 # ------------- CRPS | Boxplot --------
 # get the crps score and the quant_distance from the peak distributions
-crps_series <- data.frame(date = filtered_model$ds)
+crps_series <- data.frame(date = filtered_model$date)
 
 for (i in file_names) {
     peak_dis <- get(i)
@@ -100,7 +100,7 @@ ggplot(quant_distance_df, aes(x = file_names, y = distance)) +
     geom_boxplot() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1), text = element_text(size = 16)) +
     labs(
-        x = "Models",
+        x = "Model",
         y = "Quantile Distance (0.75 - 0.25)"
     )
 
@@ -129,8 +129,8 @@ ggplot(data = melted_results, aes(x = Var1, y = Var2, fill = value)) +
     scale_fill_gradient(low = "#efefef", high = "#3098de") +
     geom_text(aes(label = round(value, 2)), color = "black", size = 5) +
     labs(
-        x = "Method 1",
-        y = "Method 2",
+        x = "Model 2",
+        y = "Model 1",
         fill = "p-value"
     ) +
     theme_minimal() +
@@ -138,7 +138,11 @@ ggplot(data = melted_results, aes(x = Var1, y = Var2, fill = value)) +
 
 # ----------- PIT ----------
 # Define the models
-models <- c("dsb_ar1")
+# c("dsa_error_arimax", "dsb_ss_arimax")
+# c("dsa_error_arx", "dsb_ss_arx")
+# c("dsa_error_rf", "dsb_ss_rf")
+# c("dsb_ar1") c("hist_sim") c("dsa_qra")
+models <- c("dsa_error_rf", "dsb_ss_rf")
 quantiles_list <- list()
 
 # Iterate through the models
@@ -274,7 +278,7 @@ coverage_rates_long$NominalCoverage <- factor(coverage_rates_long$NominalCoverag
 # Define custom colors for the models
 custom_colors <- c(
     "#c80000", "#bf004c", "#972677", "#604285",
-    "#00c800", "#00b35d", "#009a82", "#007f8c","grey"
+    "#00c800", "#00b35d", "#009a82", "#007f8c", "grey"
 )
 
 # Create the bar chart with facet_wrap
@@ -348,6 +352,12 @@ for (c in cr) {
 coverage_test$cr <- as.factor(cr)
 # Melt the data frame to long format
 coverage_test_long <- pivot_longer(coverage_test, cols = -cr, names_to = "model", values_to = "value")
+
+# Replace values above 30 or invalid numbers with 30
+coverage_test_long <- coverage_test_long %>%
+    mutate(value = ifelse(is.na(value) | value > 30, 30, value))
+
+
 # Create the scatter plot
 ggplot(coverage_test_long, aes(x = model, y = value, shape = cr)) +
     geom_point(size = 2.5) +
@@ -359,3 +369,36 @@ ggplot(coverage_test_long, aes(x = model, y = value, shape = cr)) +
         axis.text.x = element_text(angle = 45, hjust = 1),
         text = element_text(size = 15),
     )
+
+
+# Comparing mean CRPS AT and mean CRPS DE
+mean_crps_DE <- read.csv("./plots/results/crps_means_DE.csv")
+mean_crps_AT <- read.csv("./plots/results/crps_means_AT.csv")
+
+# Normalize by Hist Sim
+mean_crps_DE <- mean_crps_DE[, 1:8] / mean_crps_DE[1, 9]
+mean_crps_AT <- mean_crps_AT[, 1:8] / mean_crps_AT[1, 9]
+
+# Add a column to indicate the country
+mean_crps_DE$country <- "DE"
+mean_crps_AT$country <- "AT"
+
+# Combine the data frames
+mean_crps_combined <- rbind(mean_crps_DE, mean_crps_AT)
+
+# Pivot the combined data frame to long format
+mean_crps_long <- pivot_longer(mean_crps_combined, cols = -country, names_to = "model", values_to = "mean_crps")
+
+
+# Create the line plot
+ggplot(mean_crps_long, aes(x = factor(model, level = c("dsa_qra", "dsb_ss_arx", "dsb_ss_rf", "dsb_ss_arimax", "dsa_error_rf", "dsa_error_arx", "dsa_error_arimax", "dsb_ar1")), y = mean_crps, color = country, group = country)) +
+    geom_line() +
+    geom_point() +
+    labs(x = "Model", y = "Standardized Mean CRPS", color = "Country") +
+    theme_minimal() +
+    theme(
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        text = element_text(size = 15)
+    )
+
+(mean_crps[, 1:8] / mean_crps[1, 9])

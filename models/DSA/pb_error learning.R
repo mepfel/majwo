@@ -4,7 +4,10 @@ library(scoringRules)
 
 # Load the model data
 # Change the name to change the model
-model <- read.csv("./data/forecasts/final/peaks_model_rf.csv")
+# model <- read.csv("./data/forecasts/AT/peaks_model_rf.csv")
+# model <- read.csv("./data/forecasts/AT/peaks_model_arx.csv")
+model <- read.csv("./data/forecasts/AT/peaks_model_arimax.csv")
+
 model$ds <- as.POSIXct(model$ds, tz = "UTC")
 
 # specify the length for the error learning phase in days
@@ -82,7 +85,7 @@ for (d in seq(1, len_test)) {
     peak_dis <- rbind(peak_dis, dis)
 }
 
-write.csv(peak_dis, file = "./evaluation/dsa_error_rf.csv", row.names = FALSE)
+write.csv(peak_dis, file = "./evaluation/dsa_error_arimax.csv", row.names = FALSE)
 
 
 # get the crps score
