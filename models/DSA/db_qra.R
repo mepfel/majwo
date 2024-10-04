@@ -5,9 +5,9 @@ library(quantreg)
 
 # ---- Getting the data ----
 
-model1 <- read.csv("./data/forecasts/AT/peaks_model_arx.csv")
-model2 <- read.csv("./data/forecasts/AT/peaks_model_arimax.csv")
-model3 <- read.csv("./data/forecasts/AT/peaks_model_rf.csv")
+model1 <- read.csv("./data/forecasts/final/peaks_model_arx.csv")
+model2 <- read.csv("./data/forecasts/final/peaks_model_arimax.csv")
+model3 <- read.csv("./data/forecasts/final/peaks_model_rf.csv")
 
 # Merge the data frames based on the ds and y columns and select only the yhat columns
 data <- model1 |>
