@@ -1,7 +1,8 @@
 library(tidyverse)
+library(quantreg)
 library(scoringRules)
 library(ggplot2)
-library(quantreg)
+
 
 # ---- Getting the data ----
 

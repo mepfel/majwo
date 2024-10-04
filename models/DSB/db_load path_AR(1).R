@@ -32,98 +32,6 @@ energy_load$date <- as.POSIXct(energy_load$date, tz = "UTC")
 
 data <- energy_load |> filter(year(date) >= 2015)
 
-# --------------------------------------------------------------------------
-# Take one year for training
-data <- energy_load |>
-    filter((year(date) >= 2022) & (year(date) < 2023)) |>
-    mutate(
-        load_origin = load,
-        load = log(load)
-    )
-# Take the next day for testing
-data_test <- energy_load[8761:(8761 + 23), ] |>
-    mutate(
-        load_origin = load,
-        load = log(load)
-    )
-
-# Generate the fourier terms
-data_fourier_year <- ts(data$load, frequency = 24 * 365)
-data$fourier_terms_year <- fourier(data_fourier_year, K = 2)
-data_test$fourier_terms_year <- fourier(data_fourier_year, K = 2, h = 24)
-
-
-statio <- lm(load ~ hour_int + weekday_int + weekday_int * hour_int + is_holiday + fourier_terms_year, data = data)
-summary(statio)
-# Assuming y is a dataframe with residuals
-y <- data.frame(index = 1:length(residuals(statio)), residuals = residuals(statio))
-
-# Some test
-pacf(y$residuals)
-library(tseries)
-adf_test <- adf.test(y$residuals)
-print(adf_test)
-# Create a histogram for y$residuals
-ggplot(y, aes(x = residuals)) +
-    geom_histogram(binwidth = 0.01, fill = "blue", color = "black", alpha = 0.7) +
-    labs(
-        title = "Histogram of Residuals",
-        x = "Residuals",
-        y = "Frequency"
-    ) +
-    theme_minimal()
-
-# Create the AR-1 model
-ar1 <- lm(y$residuals ~ lag(y$residuals))
-summary(ar1)
-
-rho <- coef(ar1)[2]
-tau_sq <- var(ar1$residuals)
-
-A <- generate_A(rho)
-
-# Sample from the multivariate normal distribution
-# Compute the covariance matrix sigma = tau^2 * A %*% t(A)
-sigma <- tau_sq * A %*% t(A)
-
-# Set the mean vector to be a zero vector of length 24
-mean <- rep(0, 24)
-
-# Draw samples (e.g., 1000 samples)
-error_samples <- mvrnorm(n = 1, mu = mean, Sigma = sigma)
-
-y_mean_24 <- as.numeric(tail(y, 1)[2]) * rho^(1:24)
-
-# Create Y forecast for the next 24 hours
-y_sample_24 <- y_mean_24 + error_samples
-
-logload_mean_24 <- as.numeric(predict(statio, data_test))
-
-logload_pred_24 <- logload_mean_24 + y_sample_24
-
-# Hier eventuell noch anpassen wegen log-trafo -> Mean und Variance
-loads_pred_24 <- exp(logload_pred_24)
-
-# Plot the results
-# Create a dataframe for plotting
-df_loads <- data.frame(
-    index = data_test$date,
-    predicted_load = loads_pred_24,
-    actual_load = data_test$load_origin
-)
-
-# Plot predicted and actual loads
-ggplot(df_loads, aes(x = index)) +
-    geom_line(aes(y = predicted_load, color = "Predicted Load")) +
-    geom_line(aes(y = actual_load, color = "Actual Load")) +
-    labs(
-        title = "Predicted vs Actual Loads for the Next 24 Hours",
-        x = "Index",
-        y = "Load"
-    ) +
-    scale_color_manual(values = c("Predicted Load" = "blue", "Actual Load" = "red")) +
-    theme_minimal()
-
 # ------------------- CRPS implementation ----------------
 # specify the length for the learning phase in days
 
@@ -221,3 +129,98 @@ print("Mean CRPS")
 print(mean(crps_scores))
 
 plot(crps_scores)
+
+# --------------------------------------------
+# ---------- Stuff from testing --------------
+# --------------------------------------------
+
+# Take one year for training
+data <- energy_load |>
+    filter((year(date) >= 2022) & (year(date) < 2023)) |>
+    mutate(
+        load_origin = load,
+        load = log(load)
+    )
+# Take the next day for testing
+data_test <- energy_load[8761:(8761 + 23), ] |>
+    mutate(
+        load_origin = load,
+        load = log(load)
+    )
+
+# Generate the fourier terms
+data_fourier_year <- ts(data$load, frequency = 24 * 365)
+data$fourier_terms_year <- fourier(data_fourier_year, K = 2)
+data_test$fourier_terms_year <- fourier(data_fourier_year, K = 2, h = 24)
+
+
+statio <- lm(load ~ hour_int + weekday_int + weekday_int * hour_int + is_holiday + fourier_terms_year, data = data)
+summary(statio)
+# Assuming y is a dataframe with residuals
+y <- data.frame(index = 1:length(residuals(statio)), residuals = residuals(statio))
+
+# Some test
+pacf(y$residuals)
+library(tseries)
+adf_test <- adf.test(y$residuals)
+print(adf_test)
+# Create a histogram for y$residuals
+ggplot(y, aes(x = residuals)) +
+    geom_histogram(binwidth = 0.01, fill = "blue", color = "black", alpha = 0.7) +
+    labs(
+        title = "Histogram of Residuals",
+        x = "Residuals",
+        y = "Frequency"
+    ) +
+    theme_minimal()
+
+# Create the AR-1 model
+ar1 <- lm(y$residuals ~ lag(y$residuals))
+summary(ar1)
+
+rho <- coef(ar1)[2]
+tau_sq <- var(ar1$residuals)
+
+A <- generate_A(rho)
+
+# Sample from the multivariate normal distribution
+# Compute the covariance matrix sigma = tau^2 * A %*% t(A)
+sigma <- tau_sq * A %*% t(A)
+
+# Set the mean vector to be a zero vector of length 24
+mean <- rep(0, 24)
+
+# Draw samples (e.g., 1000 samples)
+error_samples <- mvrnorm(n = 1, mu = mean, Sigma = sigma)
+
+y_mean_24 <- as.numeric(tail(y, 1)[2]) * rho^(1:24)
+
+# Create Y forecast for the next 24 hours
+y_sample_24 <- y_mean_24 + error_samples
+
+logload_mean_24 <- as.numeric(predict(statio, data_test))
+
+logload_pred_24 <- logload_mean_24 + y_sample_24
+
+# Hier eventuell noch anpassen wegen log-trafo -> Mean und Variance
+loads_pred_24 <- exp(logload_pred_24)
+
+# Plot the results
+# Create a dataframe for plotting
+df_loads <- data.frame(
+    index = data_test$date,
+    predicted_load = loads_pred_24,
+    actual_load = data_test$load_origin
+)
+
+# Plot predicted and actual loads
+ggplot(df_loads, aes(x = index)) +
+    geom_line(aes(y = predicted_load, color = "Predicted Load")) +
+    geom_line(aes(y = actual_load, color = "Actual Load")) +
+    labs(
+        title = "Predicted vs Actual Loads for the Next 24 Hours",
+        x = "Index",
+        y = "Load"
+    ) +
+    scale_color_manual(values = c("Predicted Load" = "blue", "Actual Load" = "red")) +
+    theme_minimal()

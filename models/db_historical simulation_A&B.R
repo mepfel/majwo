@@ -42,7 +42,7 @@ while (d < (len_test + start)) {
 
 write.csv(peak_dis, file = "./evaluation/hist_sim.csv", row.names = FALSE)
 
-
+# --------------------------------------------------
 # get the crps score
 crps_scores <- crps_sample(peak_dis$peak, as.matrix(peak_dis[, 3:ncol(peak_dis)]))
 print("Mean CRPS")
