@@ -14,7 +14,7 @@ q_distance <- function(dis) {
 
 # Read in the peak distributions
 # List all CSV files in the folder
-file_paths <- list.files(path = "./evaluation/final", pattern = "*.csv", full.names = TRUE)
+file_paths <- list.files(path = "./evaluation/m_tuning/365", pattern = "*.csv", full.names = TRUE)
 # Remove the .csv extension from the basenames
 file_names <- tools::file_path_sans_ext(basename(file_paths))
 
@@ -59,7 +59,7 @@ for (element in crps) {
 }
 mean_crps[1, ] <- means
 
-write.csv(mean_crps, file = "./plots/results/crps_means_DE.csv", row.names = FALSE)
+write.csv(mean_crps, file = "./plots/results/crps_means_DE_365.csv", row.names = FALSE)
 # Plain latex output
 kable(t(mean_crps), "latex")
 
@@ -142,7 +142,7 @@ ggplot(data = melted_results, aes(x = Var1, y = Var2, fill = value)) +
 # c("dsa_error_arx", "dsb_ss_arx")
 # c("dsa_error_rf", "dsb_ss_rf")
 # c("dsb_ar1") c("hist_sim") c("dsa_qra")
-models <- c("dsa_error_rf", "dsb_ss_rf")
+models <- c("hist_sim")
 quantiles_list <- list()
 
 # Iterate through the models
@@ -196,7 +196,7 @@ ggplot(quantiles_df, aes(x = quantiles)) +
 
 # ------------ Unconditional Coverage -----------
 # For one model
-model <- "db_hist_sim"
+model <- "hist_sim"
 data <- get(model)
 n <- nrow(data)
 
@@ -232,7 +232,7 @@ for (j in 1:length(cr)) {
         hits <- 0
         for (i in 1:nrow(data)) {
             peak <- data[i, 2]
-            dis <- as.numeric(data[i, 3:92])
+            dis <- as.numeric(data[i, 3:ncol(data)])
             # Compute the ECDF of dis
             ecdf_dis <- ecdf(dis)
             # Evaluate if it is a hit
@@ -326,7 +326,7 @@ for (j in 1:length(cr)) {
         hits <- 0
         for (i in 1:nrow(data)) {
             peak <- data[i, 2]
-            dis <- as.numeric(data[i, 3:92])
+            dis <- as.numeric(data[i, 3:ncol(data)])
             # Compute the ECDF of dis
             ecdf_dis <- ecdf(dis)
             # Evaluate if it is a hit
@@ -371,30 +371,36 @@ ggplot(coverage_test_long, aes(x = model, y = value, shape = cr)) +
     )
 
 
-# Comparing mean CRPS AT and mean CRPS DE
+# Comparing mean CRPS DE
 mean_crps_DE <- read.csv("./plots/results/crps_means_DE.csv")
-mean_crps_AT <- read.csv("./plots/results/crps_means_AT.csv")
+# mean_crps_AT <- read.csv("./plots/results/crps_means_AT.csv")
+mean_crps_m45 <- read.csv("./plots/results/crps_means_DE_m45.csv")
+mean_crps_m365 <- read.csv("./plots/results/crps_means_DE_m365.csv")
 
 # Normalize by Hist Sim
-mean_crps_DE <- mean_crps_DE[, 1:8] / mean_crps_DE[1, 9]
-mean_crps_AT <- mean_crps_AT[, 1:8] / mean_crps_AT[1, 9]
+# mean_crps_DE <- mean_crps_DE[, 1:8] / mean_crps_DE[1, 9]
+# mean_crps_AT <- mean_crps_AT[, 1:8] / mean_crps_AT[1, 9]
 
+mean_crps_DE <- mean_crps_DE[, 1:8]
+mean_crps_m45 <- mean_crps_m45[, 1:8]
+mean_crps_m365 <- mean_crps_m365[, 1:8]
 # Add a column to indicate the country
-mean_crps_DE$country <- "DE"
-mean_crps_AT$country <- "AT"
+mean_crps_DE$m <- "90"
+mean_crps_m45$m <- "45"
+mean_crps_m365$m <- "365"
 
 # Combine the data frames
-mean_crps_combined <- rbind(mean_crps_DE, mean_crps_AT)
+mean_crps_combined <- rbind(mean_crps_DE, mean_crps_m45, mean_crps_m365)
 
 # Pivot the combined data frame to long format
-mean_crps_long <- pivot_longer(mean_crps_combined, cols = -country, names_to = "model", values_to = "mean_crps")
+mean_crps_long <- pivot_longer(mean_crps_combined, cols = -m, names_to = "model", values_to = "mean_crps")
 
 
 # Create the line plot
-ggplot(mean_crps_long, aes(x = factor(model, level = c("dsa_qra", "dsb_ss_arx", "dsb_ss_rf", "dsb_ss_arimax", "dsa_error_rf", "dsa_error_arx", "dsa_error_arimax", "dsb_ar1")), y = mean_crps, color = country, group = country)) +
+ggplot(mean_crps_long, aes(x = factor(model, level = c("dsa_qra", "dsb_ss_arx", "dsb_ss_rf", "dsb_ss_arimax", "dsa_error_rf", "dsa_error_arx", "dsa_error_arimax", "dsb_ar1")), y = mean_crps, color = m, group = m)) +
     geom_line() +
     geom_point() +
-    labs(x = "Model", y = "Standardized Mean CRPS", color = "Country") +
+    labs(x = "Model", y = "Mean CRPS", color = "m") +
     theme_minimal() +
     theme(
         axis.text.x = element_text(angle = 45, hjust = 1),
