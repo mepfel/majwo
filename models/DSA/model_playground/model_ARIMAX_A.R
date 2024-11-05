@@ -3,29 +3,29 @@ library(ggplot2)
 library(forecast)
 library(plotly)
 
-# For the holidays
+# ------- Data Prep --------
+# Load holiday data
 holidays <- read.csv("./data/holidays_DE_15-24.csv") |>
     mutate_at("Date", as.Date)
 
-# --- Load the energy data ----
+# Load the energy data
 energy_load <- read.csv("./data/load_15-24.csv") |>
     mutate_at(c("hour_int", "weekday_int", "month_int"), as.factor) |>
     mutate(is_holiday = if_else(as.Date(date) %in% holidays$Date, 1, 0)) |>
     mutate(
+        # Add fourier terms
         p1 = sin(2 * pi * yday(date) / 366),
         p2 = cos(2 * pi * yday(date) / 366)
     )
-
 energy_load$date <- as.POSIXct(energy_load$date, tz = "UTC")
 
-
-# --- Getting the peaks ---
+# Getting the peaks
 peaks <- energy_load |>
     group_by(as.Date(date)) |>
     slice(which.max(load)) |>
     as.data.frame()
 
-
+# Filter the peaks
 data <- peaks |>
     filter(year(date) >= 2015)
 
@@ -35,26 +35,6 @@ weekday_dummies <- model.matrix(~ factor(weekday_int) - 1, data = data)
 for (i in 1:7) {
     data[[paste0("DoW_", i)]] <- weekday_dummies[, i]
 }
-# ---------------------------------------
-x_train <- c("is_holiday", "DoW_2", "DoW_3", "DoW_4", "DoW_5", "DoW_6", "DoW_7")
-x_reg <- train |>
-    select(all_of(x_train)) |>
-    as.matrix()
-
-# Auto ARIMA
-arima1 <- auto.arima(train$load, xreg = x_reg)
-arima1
-
-# ARIMA
-model <- arima(train$load, c(1, 1, 1), xreg = x_reg)
-
-summary(model)
-
-checkresiduals(model)
-
-train$resids <- as.numeric(model$residuals)
-
-# -------------------------------------
 
 predict_arma <- function(data, d) {
     # INPUT:
@@ -139,3 +119,23 @@ ggplotly(fig)
 resids <- predictions$load_origin - predictions$y_hat
 
 hist(resids, main = "Histogram of Residuals", xlab = "Residuals")
+
+
+# ----- Some code for testing the model ------
+x_train <- c("is_holiday", "DoW_2", "DoW_3", "DoW_4", "DoW_5", "DoW_6", "DoW_7")
+x_reg <- train |>
+    select(all_of(x_train)) |>
+    as.matrix()
+
+# Auto ARIMA
+arima1 <- auto.arima(train$load, xreg = x_reg)
+arima1
+
+# ARIMA
+model <- arima(train$load, c(1, 1, 1), xreg = x_reg)
+
+summary(model)
+
+checkresiduals(model)
+
+train$resids <- as.numeric(model$residuals)

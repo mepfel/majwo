@@ -2,7 +2,7 @@ library(tidyverse)
 library(randomForest)
 
 # ---- Load the data ----
-# For the holidays
+# The holidays
 holidays <- read.csv("./data/holidays_DE_15-24.csv") |>
     mutate_at("Date", as.Date)
 
