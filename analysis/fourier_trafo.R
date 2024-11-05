@@ -65,9 +65,6 @@ print(adf_test_result)
 mean(first_diff)
 
 
-
-
-
 # Filter the peaks for weekday_int == 3
 
 

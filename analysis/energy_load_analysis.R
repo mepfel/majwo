@@ -5,7 +5,14 @@ library(plotly)
 energy_load <- read.csv("./data/load_15-24.csv")
 energy_load$date <- as.POSIXct(energy_load$date, tz = "UTC")
 
-# Plot the whole data
+# Filter the load time series if needed
+energy_load <- energy_load |> filter((year(date) >= 2015) & (year(date) <= 2019))
+
+# --- Summary Statistics ---
+summary(energy_load)
+
+
+# Plot the whole time series
 ggplot(energy_load, aes(x = date, y = load)) +
     geom_line() +
     labs(
@@ -48,7 +55,7 @@ ggplot(energy_load, aes(load)) +
 
 
 # --- Histogramm of week days/weekend days ---
-
+# weekdays
 energy_load |>
     filter(working_day == TRUE) |>
     ggplot(aes(load)) +
@@ -57,7 +64,7 @@ energy_load |>
         title = "Histogramm of Loads for 2022 - 2024 for Working Days",
         x = "Load in MWh"
     )
-
+# weekends
 energy_load |>
     filter(working_day == FALSE) |>
     ggplot(aes(load)) +
@@ -69,14 +76,19 @@ energy_load |>
 
 # ---  Filter for one specific week, for example the first week of the dataset ---
 energy_load |>
-    filter(year(date) == 2024 & week(date) == 1) |>
+    # Decomment to see the peaks in this period
+    # group_by(as.Date(date)) |>
+    # slice(which.max(load)) |>
+    filter(year(date) == 2017 & (week(date) == 6 | week(date) == 7)) |>
     ggplot(aes(x = date, y = load)) +
     geom_line() +
+    geom_point() +
     labs(
-        x = "Hour of the day",
-        y = "Load",
-        title = "Load for one exemplary weeks",
-    )
+        y = "Load in MWh",
+        x = ""
+    ) +
+    theme_minimal() +
+    theme(text = element_text(size = 16))
 
 # --- Get the time series of loads for a given year and month ---
 year <- 2024
@@ -112,21 +124,17 @@ fig2 <- energy_load |>
         subtitle = paste("grouped by working day and filtered by month ", month)
     )
 fig2
+# Make it interactive
 # ggplotly(fig2)
-
-# --- Summary Statistics ---
-summary(energy_load)
-
-paste("SD for load: ", sapply(energy_load, sd, na.rm = TRUE)[3], " MWh")
-
-
 
 # --- Boxplot of load per day of the week from 2015 - 2024
 ggplot(energy_load, aes(x = as.factor(weekday_int), y = load)) +
     geom_boxplot() +
-    labs(x = "Month", y = "Load in MWh")
+    labs(x = "Weekday", y = "Load in MWh") +
+    theme_minimal() +
+    theme(text = element_text(size = 16))
 
-
+# --- Boxplot of load month for a specific year ---
 energy_load |>
     filter(year(date) == 2023) |>
     ggplot(aes(x = as.factor(month_int), y = load)) +

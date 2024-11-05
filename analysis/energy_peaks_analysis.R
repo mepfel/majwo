@@ -3,23 +3,25 @@ library(ggplot2)
 library(plotly)
 
 # --- Load the energy data ---
-energy_load <- read.csv("./data/load_15-24.csv")
+energy_load <- read.csv("./data/load-AT_15-24.csv")
 energy_load$date <- as.POSIXct(energy_load$date, tz = "UTC")
 
 # --- Getting the peaks ---
 peaks <- energy_load |>
   group_by(as.Date(date)) |>
-  slice(which.max(load))
+  slice(which.max(load)) |>
+  filter((year(date) >= 2015) & (year(date) <= 2020) & (load > 5000))
 
 # --- Time Series of the peaks ---
 fig <- ggplot(peaks, aes(x = date, y = load)) +
   geom_line() +
-  geom_point() +
   labs(
-    title = "Time Series of the Peak Load from 2015 to 2024",
     x = "Date",
     y = "Peak Load in MWh"
-  )
+  ) +
+  theme_minimal() +
+  theme(text = element_text(size = 16))
+
 fig
 ggplotly(fig)
 
@@ -39,7 +41,7 @@ ggplot(peaks, aes(hour_int)) +
     y = "Count"
   )
 
-# Grouped by working day
+# Only for working day
 peaks |>
   filter(working_day == FALSE) |>
   ggplot(aes(load)) +
@@ -49,6 +51,7 @@ peaks |>
     x = "Load in MWh",
   )
 
+# Only for weekends
 peaks |>
   filter(working_day == TRUE) |>
   ggplot(aes(load)) +
@@ -89,3 +92,28 @@ plot_ly(x = den3d$x, y = den3d$y, z = den3d$z) |>
 # Density of load peaks over the week
 den3d <- kde2d(peaks$weekday_int, peaks$load)
 plot_ly(x = den3d$x, y = den3d$y, z = den3d$z) |> add_surface()
+
+
+# --- Boxplot of peaks grouped by month ---
+ggplot(peaks, aes(x = as.factor(month_int), y = load)) +
+  geom_boxplot() +
+  labs(x = "Month", y = "Load in MWh") +
+  theme_minimal() +
+  theme(text = element_text(size = 16))
+
+
+
+# ---- Plot of average peaks per month, one graph per year
+# Calculate average monthly peak value
+monthly_avg_peaks <- peaks |>
+  group_by(year(date), month_int) |>
+  summarize(avg_load = mean(load, na.rm = TRUE)) |>
+  rename(year = `year(date)`)
+
+# Plot
+ggplot(monthly_avg_peaks, aes(x = month_int, y = avg_load, color = as.factor(year), group = year)) +
+  geom_line() +
+  labs(x = "Month", y = "Average Peak Load in MWh", color = "Year") +
+  scale_x_continuous(breaks = 1:12) +
+  theme_minimal() +
+  theme(text = element_text(size = 16))
