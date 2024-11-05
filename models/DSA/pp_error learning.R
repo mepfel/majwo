@@ -8,25 +8,27 @@ library(scoringRules)
 # model <- read.csv("./data/forecasts/final/peaks_model_arx.csv")
 # model <- read.csv("./data/forecasts/final/peaks_model_arimax.csv")
 
+# Defines the list of models to consider for error learning
 model_list <- c("arimax", "arx", "rf")
 
 for (m in model_list) {
+    # Read the models
     model <- read.csv(paste0("./data/forecasts/final/peaks_model_", m, ".csv"))
 
     model$ds <- as.POSIXct(model$ds, tz = "UTC")
 
     # specify the length for the error learning phase in days
-    length <- 365 # According to recent advantages paper...
+    length <- 365
 
 
-    # Daten mit übergeben!!!
+
     getDIS_errors <- function(d, data) {
         # Parameter: d day to predict
         # Parameter: data [y ... peak load, yhat ... point prediction, residuals ... residial peak load]
         print(d)
         # --------- Error Learning Phase ---------
 
-        # Getting the test data: starting from day s get the next length days
+        # Getting the test data: starting from day d get the next length days
         df_train <- data[d:(length + d - 1), ]
 
         # Standardize the residuals
@@ -41,23 +43,21 @@ for (m in model_list) {
         ecdf <- ecdf(df_train$residuals_std)
 
         # Define the inverse ECDF
-        # Input p is the probability and the return is the quantile
+        # Input p is the quantile and the return is the quantile value
         inverse_ecdf <- function(p) {
             quantile(ecdf, p, names = FALSE)
         }
-
 
         print("Error Learning DONE...")
 
         # ------- Prediction phase -------
 
         m <- 90
-        # Define the quantiles
+        # Define the set of quantiles
         quantiles <- seq(1 / (m + 1), m / (m + 1), 1 / (m + 1))
         peaks_dis_A <- data.frame(quantiles = quantiles, values = rep(0, length(quantiles)))
 
-        # Get the next 24 hours after the testing period
-        # Hier nur Testing data vom Model!!!
+        # Get the next value after the testing period
         df_test <- data[(d + length), ]
 
 
@@ -81,7 +81,7 @@ for (m in model_list) {
     length(model[, "residuals"]) - length
 
 
-    # specify the length for testing period in days
+    # Specify the length for testing period in days
     len_test <- 1035
 
     peak_dis <- data.frame()
@@ -93,7 +93,7 @@ for (m in model_list) {
     write.csv(peak_dis, file = paste0("./evaluation/dsa_error_", m, ".csv"), row.names = FALSE)
 }
 
-# get the crps score
+# Get the crps score
 crps_scores <- crps_sample(peak_dis$peak, as.matrix(peak_dis[, 3:ncol(peak_dis)]))
 print("Mean CRPS")
 print(mean(crps_scores))

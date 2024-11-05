@@ -1,7 +1,7 @@
 library(tidyverse)
 library(randomForest)
 
-# ---- Load the data ----
+# ---- Data Loading and Preparation ----
 # The holidays
 holidays <- read.csv("./data/holidays_DE_15-24.csv") |>
     mutate_at("Date", as.Date)
@@ -63,7 +63,8 @@ predict_arma <- function(data, d) {
     # data
     # d ...  day (has to be greater than 0)
 
-    # length of the training period is 365 by default
+    # Length of the training period is 365 by default
+
     #### Data Manipulation
 
     # Train/Test Split
@@ -76,7 +77,7 @@ predict_arma <- function(data, d) {
         select(all_of(x_train)) |>
         as.matrix()
 
-    # ARIMA
+    # ARIMAX
     model <- arima(train$load, c(1, 1, 1), xreg = x_reg)
 
     # --------- TESTING ------------
@@ -93,7 +94,7 @@ predict_arma <- function(data, d) {
 }
 
 
-# Run the predictons for some days
+# Run the predictons for #pred_length days
 predictions <- data.frame()
 pred_length <- 1400 # in days
 for (i in 1:pred_length) {
@@ -129,9 +130,10 @@ predict_ar7 <- function(data, d) {
     # data
     # d ...  day (has to be bigger than 0)
 
-    # length of the training period is 365 by default
-    #### Data Manipulation
+    # Length of the training period is 365 by default
 
+    # Preperations
+    # Define the formula
     formula <- load ~ lag_1 + lag_2 + lag_3 + lag_4 + lag_5 + lag_6 + lag_7 + weekday_int + is_holiday + p1 + p2
 
     # Train/Test Split
@@ -147,13 +149,12 @@ predict_ar7 <- function(data, d) {
 
     yhat_test <- as.numeric(predict(model, newdata = test))
 
-    # Transformation muss eventuell angepasst werden
+    # Make new predictions
     test$y_hat <- yhat_test
     return(test)
 }
 
-
-# Run the predictons for some days
+# Run the predictons for #pred_length days
 predictions <- data.frame()
 pred_length <- 1400 # in days
 for (i in 1:pred_length) {

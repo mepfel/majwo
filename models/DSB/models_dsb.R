@@ -1,8 +1,8 @@
 library(tidyverse)
 library(randomForest)
 
-# ---- Load the data ----
-# For the holidays
+# ---- Data Loading and Preparation ----
+# The holidays
 holidays <- read.csv("./data/holidays_DE_15-24.csv") |>
     mutate_at("Date", as.Date)
 
@@ -13,6 +13,7 @@ energy_load <- read.csv("./data/load_15-24.csv") |>
 
 energy_load$date <- as.POSIXct(energy_load$date, tz = "UTC")
 
+# Create lags and add the fourier terms
 data <- energy_load |>
     mutate( # Encode the season of the year
         p1 = sin(2 * pi * yday(date) / 366),
@@ -58,7 +59,7 @@ predict_arima <- function(data, d) {
     # INPUT:
     # data
     # d ...  day
-    # training length is 365 days
+    # Training length is 365 days
 
     # ------- TRAINING ----------
 
@@ -85,13 +86,15 @@ predict_arima <- function(data, d) {
     }
 
     # --------- TESTING ------------
-    # getting the next hour of data
+    # Getting the next hour of data
     test <- data[(24 * d + 365 * 24 - 23):(24 * d + 365 * 24), ]
 
+    # Generate the x-data for prediction
     x_reg_new <- test |>
         select(all_of(x_train)) |>
         as.matrix()
 
+    # Predict the next 24 hours
     predictions <- numeric(24)
     for (i in 1:24) {
         model <- get(paste0("model_", (i - 1)))
@@ -103,7 +106,7 @@ predict_arima <- function(data, d) {
     return(data_test)
 }
 
-# Run the predictons for some days
+# Run the predictons for #pred_length days
 predictions <- data.frame()
 pred_length <- 1400 # in days
 for (i in 1:pred_length) {
@@ -226,7 +229,7 @@ for (i in 1:n) {
 
     data[i, "y"] <- (data[i, "load"] - mean) / std
 
-
+    # Save mean and std
     data$mean[i] <- mean
     data$std[i] <- std
 }
@@ -236,6 +239,8 @@ formula <- as.formula(paste("y ~", paste(c(paste0("x_", 1:21), "p1", "p2", "week
 
 pred_length <- 1400
 predictions <- data.frame(matrix(ncol = 52, nrow = 0))
+
+# Run the predictions for #pred_length days
 for (d in 1:pred_length) {
     print(d)
     train <- data[(24 * d - 23):(((364 + d) * 24)), ]
@@ -246,7 +251,7 @@ for (d in 1:pred_length) {
         print(i)
         train_h <- train |>
             filter(hour(date) == i)
-
+        # Fit the RF
         rf <- randomForest(formula, data = train_h, ntree = 100)
 
         y_hat <- as.numeric(predict(rf, test[(i + 1), ]))
@@ -255,6 +260,7 @@ for (d in 1:pred_length) {
 
     predictions <- rbind(predictions, test)
 
+    # Save the data automatically after 500 iterations to avoid data losses in case of an error
     if (d %% 500 == 0) {
         write.csv(predictions, file = "./data/forecasts/loads_16-19_model-rf-CACHE.csv", row.names = FALSE)
     }

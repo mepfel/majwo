@@ -1,43 +1,55 @@
 library(tidyverse)
 library(scoringRules)
 library(copula)
-# This is a first general implementation of the Shaake Shuffle algoithm
 
-# Load the model data
+
+# Load single models
 
 # model <- read.csv("./data/forecasts/final/loads_model_rf.csv")
 # model <- read.csv("./data/forecasts/final/loads_model_arx.csv")
 # model <- read.csv("./data/forecasts/final/loads_model_arimax.csv")
 
+# Helper: Uncomment if necessary
 # Check if hour 0 is missing and then add it
 # model$ds <- ifelse(grepl("^\\d{4}-\\d{2}-\\d{2}$", model$ds), paste(model$ds, "00:00:00"), model$ds)
 # write.csv(model, "./data/forecasts/final/loads_model_rf.csv", row.names = FALSE)
 
+#########################
+# -- Schaake shuffle -- #
+#########################
+
+# Defines the list of models to consider for Schaake shuffle
 model_list <- c("arimax", "arx", "rf")
 
+
 for (m in model_list) {
+    # Read the model
     model <- read.csv(paste0("./data/forecasts/final/loads_model_", m, ".csv"))
 
     model$ds <- as.POSIXct(model$ds, tz = "UTC")
 
 
-    # specify the length for the error learning phase in days
+    # Specify the length for the error learning phase in days
     length <- 365
 
-    # data als Parameter übergeben
     getDIS_ss <- function(d, data) {
+        # Input:
+        #   Parameter: d day to predict
+        #   Parameter: data
+
         print(d)
         # --------- Error Learning Phase ---------
         # Getting the test data: starting from day i get the next 365 days
-        # Achtung: Hier dürfen nur Training oder Testing data verwendet werden
         df_train <- data[((d - 1) * 24 + 1):(((length + d - 1) * 24)), ]
 
         mu_sigma <- data.frame(hour = seq(0, 23), mu = rep(0, 24), sigma = rep(0, 24))
 
+        # Get the empirical distribution of resids per hour
         for (i in seq(0, 23)) {
             load_h <- df_train |>
                 filter(hour(ds) == i)
 
+            # Calculate mean and std
             mean <- mean(load_h$residuals)
             std <- sqrt(var(load_h$residuals))
 
@@ -57,15 +69,16 @@ for (m in model_list) {
 
 
         # Generate the Inverse ECDF
-        # Input: p... Probabilty , i... hour
-        # Output: quantile
         inverse_ecdf <- function(p, i) {
+            # Input: p... Probabilty/quantile , i... hour
+            # Output: quantile value
             quantile(get(paste0("ecdf_", i)), p, names = FALSE)
         }
+
         print("Error Learning DONE...")
 
         # ---- Dependence Learning Phase ----
-        # Define the length m of the learning phase
+        # Define the length m of the learning phase (= granularity of the multivariate distribution)
         m <- 90
 
         # Initialize the training sample of the past m errors for every hour to learn the copula
@@ -94,7 +107,7 @@ for (m in model_list) {
 
         # Create the Copula and the Rank Matrix
 
-        # 2) Non-Parametric Approach
+        # 1) Non-Parametric Approach
         # Consider X as the sample from the empirical copula
         # Apply the rank function to get the rank matrix
         R_emp <- apply(X, 2, rank)
@@ -103,8 +116,9 @@ for (m in model_list) {
         # ------- Prediction phase -------
 
         # Generate the 24 univariate for every hour
-        # m also defines the quantile level i.. 1 - m with i/m+1 quantiles
         univariate_forecast_t <- matrix(nrow = 24, ncol = m)
+
+        # m also defines the quantile level i.. 1 - m with i/m+1 quantiles
         quantiles <- seq(1 / (m + 1), m / (m + 1), 1 / (m + 1))
 
         # Get the next 24 hours after the testing period
@@ -145,9 +159,9 @@ for (m in model_list) {
         return(data.frame(date = date, peak = peak, peak_dis = t(peaks_dis)))
     }
 
-    # max possible length
+    # Max possible length
     length(model$y) / 24 - length
-    # specify the length for rolling iterations in days
+    # Specify the length for rolling iterations in days
     len_test <- 1035
 
     peak_dis <- data.frame()
@@ -156,9 +170,10 @@ for (m in model_list) {
         peak_dis <- rbind(peak_dis, dis)
     }
 
-
+    # Store the results as csv
     write.csv(peak_dis, file = paste0("./evaluation/dsb_ss_", m, ".csv"), row.names = FALSE)
 }
+
 
 # get the crps score
 crps_scores <- crps_sample(peak_dis$peak, as.matrix(peak_dis[, 3:ncol(peak_dis)]))

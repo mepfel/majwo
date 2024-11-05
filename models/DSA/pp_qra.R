@@ -25,8 +25,8 @@ getDIS_qra <- function(d, data) {
     # Parameter: data [y ... Peak load, x ... avg. point prediction ]
     print(d)
 
-    # Define the quantiles
-    m <- 90
+    # Define the quantile set
+    m <- 90 # Total number of quantiles = Models to fit
     quantiles <- seq(1 / (m + 1), m / (m + 1), 1 / (m + 1))
 
     # --------- Calibration Phase ---------
@@ -34,6 +34,7 @@ getDIS_qra <- function(d, data) {
     # Getting the test data: starting from day i get the next clength days
     df_train <- data[d:(clength - 1 + d), ]
 
+    # Run the quantile regression
     qreg <- rq(y ~ x1 + x2 + x3, tau = quantiles, data = df_train)
 
 
@@ -41,7 +42,7 @@ getDIS_qra <- function(d, data) {
 
     # ------- Prediction phase -------
 
-    # Get the next data for prediction
+    # Get the next data point for prediction
     df_test <- data[(d + clength), ]
 
     peaks_dis <- data.frame(predict.rq(qreg, df_test))[, 1]
@@ -70,15 +71,17 @@ for (d in seq(1, len_test)) {
     peak_dis <- rbind(peak_dis, dis)
 }
 
+# Store the results in a csv file
 write.csv(peak_dis, file = "./evaluation/dsa_qra.csv", row.names = FALSE)
 
-# get the crps score
+# Get the crps score
 crps_scores <- crps_sample(peak_dis$peak, as.matrix(peak_dis[, 3:ncol(peak_dis)]))
 print("Mean CRPS")
 print(mean(crps_scores))
 
 plot(crps_scores)
 
+# ----- CRPS Score for a specific peak distribution i --------
 i <- 1
 # CRPS-Score
 crps_sample(peak_dis[i, 2], as.numeric(peak_dis[i, 3:ncol(peak_dis)]))

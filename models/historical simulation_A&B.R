@@ -11,14 +11,15 @@ peaks <- energy_load |>
     slice(which.max(load))
 
 # ---- Rolling Window Methods ----
-# Setting the window and the days to go away from the latest observation (starting from the newest one in
-# the dataset)
+# Setting the window and the days to go away from the latest observation (starting from the newest one in the dataset)
 
 window <- 90
 data <- data.frame(peaks[, c("date", "load")])
 
-
+# ----------------------------------------------------------------------------------------------
 # ----- Rolling Window Method #A for Peaks (which is equal for Rollowing Window Method #B) -----
+# ----------------------------------------------------------------------------------------------
+
 # Getting the last window observation from the peaks
 getDIS_rolling <- function(d, data) {
     peaks_rolling <- as.numeric(data[(d - window):(d - 1), "load"])
@@ -39,10 +40,14 @@ while (d < (len_test + start)) {
     peak_dis <- rbind(peak_dis, dis)
     d <- d + 1
 }
-
+# Store the resutls
 write.csv(peak_dis, file = "./evaluation/hist_sim.csv", row.names = FALSE)
 
-# --------------------------------------------------
+
+########################################
+# ------- Old Code from Testings -------
+########################################
+# --------------------------------------
 # get the crps score
 crps_scores <- crps_sample(peak_dis$peak, as.matrix(peak_dis[, 3:ncol(peak_dis)]))
 print("Mean CRPS")
@@ -50,10 +55,10 @@ print(mean(crps_scores))
 
 plot(crps_scores)
 
-# -----------------------------------------------------------------------------------
+# ----------------------------------------------------------
 # ----- Rolling Window Method #B based on Load Forecast ----
-
-get_peaks_rolling_loads <- function(days) {
+# ----------------------------------------------------------
+getDIS_rolling_B <- function(days) {
     # Step 1: Getting the empirical distribution
     # -
 

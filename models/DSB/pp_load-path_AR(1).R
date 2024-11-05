@@ -3,9 +3,15 @@ library(scoringRules)
 library(forecast)
 library(MASS)
 
-# This is a first general implementation of the AR-1 approach
+
 # -------- Functions ------
 generate_A <- function(rho) {
+    # INPUT:
+    # rho ... real value number
+    #
+    # Output:
+    # A ... matrix
+
     # Initialize an empty 24x24 matrix
     A <- matrix(0, nrow = 24, ncol = 24)
 
@@ -21,9 +27,11 @@ generate_A <- function(rho) {
 }
 
 
-# --- Load the energy data ----
+# ---- Data Loading and Preparation ----
+
 holidays <- read.csv("./data/holidays_DE_15-24.csv") |>
     mutate_at("Date", as.Date)
+
 energy_load <- read.csv("./data/load_15-24.csv") |>
     mutate_at(c("hour_int", "weekday_int", "month_int"), as.factor) |>
     mutate(is_holiday = if_else(as.Date(date) %in% holidays$Date, 1, 0))
@@ -32,13 +40,21 @@ energy_load$date <- as.POSIXct(energy_load$date, tz = "UTC")
 
 data <- energy_load |> filter(year(date) >= 2015)
 
-# ------------------- CRPS implementation ----------------
-# specify the length for the learning phase in days
+
+#########################
+# ------- AR-1 -------- #
+#########################
+
+# specify the length for the learning phase in days (the real length is the defined length +1)
 
 length <- 364
 
-# data als Parameter übergeben
+
 getDIS_ar1 <- function(d, data) {
+    # INPUT:
+    # data
+    # d ...  day
+
     print(d)
     # Getting the train data: starting from day i get the next 365 days
     df_train <- data[((d - 1) * 24 + 1):((length + d) * 24), ]
@@ -52,6 +68,7 @@ getDIS_ar1 <- function(d, data) {
 
 
     # --------- Training Phase ---------
+    # Make the time series stationary
     statio <- lm(load ~ hour_int + weekday_int + weekday_int * hour_int + is_holiday + fourier_terms_year, data = df_train)
     # Assuming y is a dataframe with residuals
     y <- data.frame(index = 1:length(residuals(statio)), residuals = residuals(statio))
@@ -60,6 +77,7 @@ getDIS_ar1 <- function(d, data) {
     ar1 <- lm(y$residuals ~ lag(y$residuals))
     summary(ar1)
 
+    # Extract the coefficients from the AR1-Model
     rho <- coef(ar1)[2]
     tau_sq <- var(ar1$residuals)
 
@@ -72,15 +90,19 @@ getDIS_ar1 <- function(d, data) {
     mean <- rep(0, 24)
 
     print("Training DONE...")
+
     # ------- Prediction -----
-    # Define the length m of the learning phase
+    # Define the granularity of the multivariate distribution
     m <- 90
     multivariate_forecast <- matrix(nrow = m, ncol = 24)
+
     # Create the mean prediction from the AR-1 model for the next 24 hours
     y_mean_24 <- as.numeric(tail(y, 1)[2]) * rho^(1:24)
+
     # Get the base component for the 24 hours from the seosonality model
     base_mean_24 <- as.numeric(predict(statio, df_test))
 
+    # Generate m sample load paths for the next day
     for (i in 1:m) {
         # Sample from the multivariate normal distribution
         error_samples <- mvrnorm(n = 1, mu = mean, Sigma = sigma)
@@ -121,7 +143,9 @@ for (d in seq(1, len_test)) {
     peak_dis <- rbind(peak_dis, dis)
 }
 
+# Store the results
 write.csv(peak_dis, file = "./evaluation/dsb_ar1.csv", row.names = FALSE)
+
 
 # get the crps score
 crps_scores <- crps_sample(peak_dis$peak, as.matrix(peak_dis[, 3:ncol(peak_dis)]))
